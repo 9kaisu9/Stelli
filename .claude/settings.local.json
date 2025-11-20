@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__figma-desktop__get_design_context",
+      "mcp__figma-desktop__get_screenshot",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(mv temp-expo/* temp-expo/.* .)",
+      "Bash(rm:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Bash(npm start -- --clear)",
+      "Bash(npx kill-port:*)",
+      "Bash(npm start:*)",
+      "Bash(timeout:*)",
+      "Bash(dir /s /b \"c:\\Development\\Stelli\\app\")",
+      "Bash(findstr:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

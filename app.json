@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "temp-expo",
-    "slug": "temp-expo",
-    "version": "1.0.0",
+    "name": "My New App",
+    "slug": "my-new-app",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,8 +10,9 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ebfeff"
     },
+    "scheme": "my-new-app",
     "ios": {
       "supportsTablet": true
     },
@@ -25,6 +26,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
