@@ -249,39 +249,43 @@ export default function ListDetailScreen() {
           </View>
         </View>
 
-        {/* Entries Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Entries</Text>
-          {entryCount > 0 && (
-            <Text style={styles.entryCount}>{entryCount}</Text>
+        {/* Entries Section */}
+        <View style={styles.entriesSection}>
+          {/* Entries Header */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Entries</Text>
+            {entryCount > 0 && (
+              <Text style={styles.entryCount}>{entryCount}</Text>
+            )}
+          </View>
+
+          {/* Empty State */}
+          {entryCount === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={80} color={Colors.gray} style={styles.emptyIcon} />
+              <Text style={styles.emptyTitle}>No entries yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Tap the + button below to add your first entry to this list
+              </Text>
+            </View>
+          )}
+
+          {/* Entry Cards Container */}
+          {entries && entries.length > 0 && (
+            <View style={styles.entriesContainer}>
+              {entries.map((entry, index) => (
+                <EntryCard
+                  key={entry.id}
+                  entry={entry}
+                  list={list}
+                  onPress={() => handleEntryPress(entry.id)}
+                  onLongPress={() => handleEntryLongPress(entry.id, entry.field_values['1'] || 'Untitled')}
+                  showDivider={index < entries.length - 1}
+                />
+              ))}
+            </View>
           )}
         </View>
-
-        {/* Empty State */}
-        {entryCount === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={80} color={Colors.gray} style={styles.emptyIcon} />
-            <Text style={styles.emptyTitle}>No entries yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Tap the + button below to add your first entry to this list
-            </Text>
-          </View>
-        )}
-
-        {/* Entry Cards */}
-        {entries && entries.length > 0 && (
-          <View style={styles.entriesContainer}>
-            {entries.map((entry) => (
-              <EntryCard
-                key={entry.id}
-                entry={entry}
-                list={list}
-                onPress={() => handleEntryPress(entry.id)}
-                onLongPress={() => handleEntryLongPress(entry.id, entry.field_values['1'] || 'Untitled')}
-              />
-            ))}
-          </View>
-        )}
       </ScrollView>
 
       {/* Floating Action Button */}
@@ -380,6 +384,9 @@ const styles = StyleSheet.create({
   capitalize: {
     textTransform: 'capitalize',
   },
+  entriesSection: {
+    marginBottom: Spacing.gap.section,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -401,7 +408,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   entriesContainer: {
-    marginBottom: Spacing.gap.medium,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    overflow: 'hidden',
   },
   emptyState: {
     alignItems: 'center',
