@@ -17,7 +17,12 @@
       "Bash(timeout:*)",
       "Bash(dir /s /b \"c:\\Development\\Stelli\\app\")",
       "Bash(findstr:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

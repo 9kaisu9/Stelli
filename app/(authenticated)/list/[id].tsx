@@ -1,19 +1,38 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
 import Card from '@/components/Card';
 import EntryCard from '@/components/EntryCard';
+import TabSwitcher from '@/components/TabSwitcher';
+import Button from '@/components/Button';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
+import { Entry } from '@/constants/types';
 
 type SortOption = 'date' | 'rating' | 'name';
 type FilterOption = 'all' | 'highRated' | 'recent';
+
+interface SortCriteria {
+  id: string;
+  key: SortOption;
+  label: string;
+  icon: string;
+  direction: 'asc' | 'desc';
+}
+
+const AVAILABLE_SORT_OPTIONS: Omit<SortCriteria, 'id' | 'direction'>[] = [
+  { key: 'date', label: 'Date', icon: 'calendar-outline' },
+  { key: 'rating', label: 'Rating', icon: 'star-outline' },
+  { key: 'name', label: 'Name', icon: 'text-outline' },
+];
 
 export default function ListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,9 +40,21 @@ export default function ListDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('date');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [showSortFilter, setShowSortFilter] = useState(false);
+  const [showSortFilterModal, setShowSortFilterModal] = useState(false);
+  const [modalTab, setModalTab] = useState<'sort' | 'filter'>('sort');
+
+  // Applied sort criteria (order matters - first has highest priority)
+  const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
+    { id: '1', key: 'date', label: 'Date', icon: 'calendar-outline', direction: 'desc' },
+  ]);
+
+  // Non-applied sort criteria
+  const [nonAppliedSortCriteria, setNonAppliedSortCriteria] = useState<SortCriteria[]>([
+    { id: '2', key: 'rating', label: 'Rating', icon: 'star-outline', direction: 'desc' },
+    { id: '3', key: 'name', label: 'Name', icon: 'text-outline', direction: 'asc' },
+  ]);
 
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
   const { data: entries, isLoading: entriesLoading, error: entriesError } = useListEntries(id);
@@ -163,6 +194,22 @@ export default function ListDetailScreen() {
     setShowSortFilter(!showSortFilter);
   };
 
+  const handleOpenSortFilterModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowSortFilterModal(true);
+  };
+
+  const handleCloseSortFilterModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowSortFilterModal(false);
+  };
+
+  const handleApplySortFilter = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // TODO: Apply sort and filter logic
+    setShowSortFilterModal(false);
+  };
+
   const handleSortChange = (option: SortOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSortBy(option);
@@ -236,24 +283,24 @@ export default function ListDetailScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
+          <View style={styles.headerRightButtons}>
+            <TouchableOpacity onPress={handleOpenSortFilterModal} style={styles.headerButton}>
+              <Ionicons name="funnel-outline" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* List Title and Icon */}
+        {/* List Title */}
         <View style={styles.titleSection}>
-          {list.icon && (
-            <Text style={styles.listIcon}>{list.icon}</Text>
-          )}
           <Text style={styles.listName}>{list.name}</Text>
         </View>
 
-        {/* Description Card (only if description exists) */}
+        {/* List Description */}
         {list.description && (
-          <Card style={styles.descriptionCard}>
-            <Text style={styles.description}>{list.description}</Text>
-          </Card>
+          <Text style={styles.listDescription}>{list.description}</Text>
         )}
 
         {/* Sort & Filter Options (Expandable) */}
@@ -361,26 +408,6 @@ export default function ListDetailScreen() {
 
         {/* Entries Section */}
         <View style={styles.entriesSection}>
-          {/* Entries Header with Sort/Filter */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Entries</Text>
-            <View style={styles.sectionHeaderRight}>
-              {entryCount > 0 && (
-                <Text style={styles.entryCount}>{entryCount}</Text>
-              )}
-              <TouchableOpacity
-                onPress={handleSortFilterToggle}
-                style={styles.sortFilterIcon}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="funnel-outline"
-                  size={20}
-                  color={Colors.text.primary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Empty State */}
           {entryCount === 0 && (
@@ -411,6 +438,160 @@ export default function ListDetailScreen() {
         </View>
       </ScrollView>
 
+      {/* Sort & Filter Modal */}
+      <Modal
+        visible={showSortFilterModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseSortFilterModal}
+      >
+        <View style={CommonStyles.screenContainer}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderSpacer} />
+            <Text style={styles.modalHeaderTitle}>Sort & Filter</Text>
+            <TouchableOpacity onPress={handleCloseSortFilterModal} style={styles.modalCancelButton}>
+              <Ionicons name="close" size={20} color={Colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            {/* Tab Switcher */}
+            <View style={styles.modalTabSwitcher}>
+              <TabSwitcher
+                tabs={['Sort', 'Filter']}
+                activeTab={modalTab === 'sort' ? 'Sort' : 'Filter'}
+                onTabChange={(tab) => setModalTab(tab === 'Sort' ? 'sort' : 'filter')}
+              />
+            </View>
+
+            {/* Sort Options */}
+            {modalTab === 'sort' && (
+              <View style={styles.modalOptionsContainer}>
+                <TouchableOpacity
+                  style={[styles.modalOption, sortBy === 'date' && styles.modalOptionActive]}
+                  onPress={() => handleSortChange('date')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={24}
+                    color={sortBy === 'date' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, sortBy === 'date' && styles.modalOptionTextActive]}>
+                    Date
+                  </Text>
+                  {sortBy === 'date' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, sortBy === 'rating' && styles.modalOptionActive]}
+                  onPress={() => handleSortChange('rating')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="star-outline"
+                    size={24}
+                    color={sortBy === 'rating' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, sortBy === 'rating' && styles.modalOptionTextActive]}>
+                    Rating
+                  </Text>
+                  {sortBy === 'rating' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, sortBy === 'name' && styles.modalOptionActive]}
+                  onPress={() => handleSortChange('name')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="text-outline"
+                    size={24}
+                    color={sortBy === 'name' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, sortBy === 'name' && styles.modalOptionTextActive]}>
+                    Name
+                  </Text>
+                  {sortBy === 'name' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Filter Options */}
+            {modalTab === 'filter' && (
+              <View style={styles.modalOptionsContainer}>
+                <TouchableOpacity
+                  style={[styles.modalOption, filterBy === 'all' && styles.modalOptionActive]}
+                  onPress={() => handleFilterChange('all')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="apps-outline"
+                    size={24}
+                    color={filterBy === 'all' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, filterBy === 'all' && styles.modalOptionTextActive]}>
+                    All
+                  </Text>
+                  {filterBy === 'all' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, filterBy === 'highRated' && styles.modalOptionActive]}
+                  onPress={() => handleFilterChange('highRated')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="trophy-outline"
+                    size={24}
+                    color={filterBy === 'highRated' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, filterBy === 'highRated' && styles.modalOptionTextActive]}>
+                    High Rated
+                  </Text>
+                  {filterBy === 'highRated' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, filterBy === 'recent' && styles.modalOptionActive]}
+                  onPress={() => handleFilterChange('recent')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={24}
+                    color={filterBy === 'recent' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.modalOptionText, filterBy === 'recent' && styles.modalOptionTextActive]}>
+                    Recent
+                  </Text>
+                  {filterBy === 'recent' && (
+                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Bottom Actions */}
+          <View style={styles.modalBottomActions}>
+            <Button
+              label="Apply"
+              variant="primary"
+              onPress={handleApplySortFilter}
+              fullWidth
+            />
+          </View>
+        </View>
+      </Modal>
+
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
@@ -437,6 +618,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.gap.large,
   },
+  headerRightButtons: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
+  },
   headerButton: {
     width: 40,
     height: 40,
@@ -448,28 +633,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   titleSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.gap.small,
-    marginBottom: Spacing.gap.medium,
-  },
-  listIcon: {
-    fontSize: 32,
+    marginBottom: Spacing.gap.small,
   },
   listName: {
-    fontSize: Typography.fontSize.h1,
+    fontSize: Typography.fontSize.h2,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
-    flex: 1,
   },
-  descriptionCard: {
-    marginBottom: Spacing.gap.medium,
-  },
-  description: {
+  listDescription: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
-    lineHeight: 20,
+    marginBottom: Spacing.gap.large,
   },
   sortFilterCard: {
     marginBottom: Spacing.gap.medium,
@@ -516,14 +691,9 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: Spacing.gap.medium,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
-    color: Colors.text.primary,
   },
   sectionHeaderRight: {
     flexDirection: 'row',
@@ -616,5 +786,79 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingTop: Spacing.gap.large,
+    paddingBottom: Spacing.gap.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  modalCancelButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.button.neutral,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderTitle: {
+    fontSize: Typography.fontSize.h2,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+  },
+  modalHeaderSpacer: {
+    width: 40,
+  },
+  modalScrollContent: {
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingTop: Spacing.gap.section,
+    paddingBottom: 120,
+  },
+  modalTabSwitcher: {
+    marginBottom: Spacing.gap.large,
+  },
+  modalOptionsContainer: {
+    gap: Spacing.gap.small,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.padding.card,
+    gap: Spacing.gap.small,
+  },
+  modalOptionActive: {
+    backgroundColor: Colors.primary,
+  },
+  modalOptionText: {
+    flex: 1,
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.gray,
+  },
+  modalOptionTextActive: {
+    color: Colors.black,
+  },
+  modalCheckmark: {
+    marginLeft: 'auto',
+  },
+  modalBottomActions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.screenPadding.horizontal,
+    paddingBottom: 32,
+    zIndex: 10,
   },
 });

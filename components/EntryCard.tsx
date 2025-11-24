@@ -71,47 +71,71 @@ export default function EntryCard({ entry, list, onPress, onLongPress, showDivid
     return list.icon || 'list';
   };
 
-  // Render stars for rating
-  const renderStars = () => {
-    if (!entry.rating) return null;
-
-    const rating = entry.rating;
-    const maxRating = list.rating_config?.max || 5;
-    const stars = [];
-
-    for (let i = 1; i <= maxRating; i++) {
-      if (i <= rating) {
-        stars.push(
-          <Ionicons key={i} name="star" size={18} color={Colors.black} />
-        );
-      } else if (i - 0.5 <= rating) {
-        stars.push(
-          <Ionicons key={i} name="star-half" size={18} color={Colors.black} />
-        );
-      } else {
-        stars.push(
-          <Ionicons key={i} name="star-outline" size={18} color={Colors.black} />
-        );
-      }
+  // Render rating inside icon circle
+  const renderRatingIcon = () => {
+    if (entry.rating === null || entry.rating === undefined) {
+      return <Ionicons name="star-outline" size={20} color={Colors.black} />;
     }
-
-    return <View style={styles.starsContainer}>{stars}</View>;
-  };
-
-  // Render rating based on type
-  const renderRating = () => {
-    if (entry.rating === null || entry.rating === undefined) return null;
 
     if (list.rating_type === 'stars') {
-      return renderStars();
+      const rating = entry.rating;
+      const maxRating = list.rating_config?.max || 5;
+      const starCount = Math.min(maxRating, 5);
+
+      // For 5 stars, arrange in circular pattern (pentagon)
+      if (starCount === 5) {
+        return (
+          <View style={styles.iconStarsCircular}>
+            {Array.from({ length: 5 }).map((_, i) => {
+              let starIcon;
+              if (i + 1 <= rating) {
+                starIcon = 'star';
+              } else if (i + 0.5 <= rating) {
+                starIcon = 'star-half';
+              } else {
+                starIcon = 'star-outline';
+              }
+
+              // Arrange stars in a circle (pentagon points)
+              // Top star (0°), then clockwise
+              const positions = [
+                { top: 1, left: '50%', marginLeft: -4.5 },    // Top center
+                { top: 8, right: 5 },                          // Top right
+                { bottom: 4, right: 8 },                       // Bottom right
+                { bottom: 4, left: 8 },                        // Bottom left
+                { top: 8, left: 5 },                           // Top left
+              ];
+
+              return (
+                <View key={i} style={[styles.starPosition, positions[i]]}>
+                  <Ionicons name={starIcon as any} size={9} color={Colors.black} />
+                </View>
+              );
+            })}
+          </View>
+        );
+      }
+
+      // For other star counts, use row layout
+      return (
+        <View style={styles.iconStarsContainer}>
+          {Array.from({ length: starCount }).map((_, i) => {
+            if (i + 1 <= rating) {
+              return <Ionicons key={i} name="star" size={10} color={Colors.black} />;
+            } else if (i + 0.5 <= rating) {
+              return <Ionicons key={i} name="star-half" size={10} color={Colors.black} />;
+            } else {
+              return <Ionicons key={i} name="star-outline" size={10} color={Colors.black} />;
+            }
+          })}
+        </View>
+      );
     } else if (list.rating_type === 'points') {
-      return <Text style={styles.ratingText}>{entry.rating}/100</Text>;
+      return <Text style={styles.ratingIconText}>{entry.rating}</Text>;
     } else if (list.rating_type === 'scale') {
-      return <Text style={styles.ratingText}>{entry.rating}/10</Text>;
+      return <Text style={styles.ratingIconText}>{entry.rating}</Text>;
     }
   };
-
-  const icon = getListIcon();
 
   return (
     <>
@@ -123,15 +147,9 @@ export default function EntryCard({ entry, list, onPress, onLongPress, showDivid
         onLongPress={handleLongPressAction}
         activeOpacity={1}
       >
-        {/* Left side: Icon */}
+        {/* Left side: Rating Icon */}
         <View style={styles.iconContainer}>
-          {icon ? (
-            <Ionicons name={icon as any} size={24} color={Colors.black} />
-          ) : list.icon ? (
-            <Text style={styles.emojiIcon}>{list.icon}</Text>
-          ) : (
-            <Ionicons name="list" size={24} color={Colors.black} />
-          )}
+          {renderRatingIcon()}
         </View>
 
         {/* Middle: Entry info */}
@@ -139,10 +157,7 @@ export default function EntryCard({ entry, list, onPress, onLongPress, showDivid
           <Text style={styles.entryName} numberOfLines={1}>
             {entryName}
           </Text>
-          <View style={styles.metadataRow}>
-            {renderRating()}
-            <Text style={styles.date}>{formatDate(entry.created_at)}</Text>
-          </View>
+          <Text style={styles.date}>{formatDate(entry.created_at)}</Text>
         </View>
 
         {/* Right side: Arrow */}
@@ -185,23 +200,30 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: 2,
   },
-  metadataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.gap.medium,
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 0,
-  },
-  ratingText: {
+  date: {
     fontSize: Typography.fontSize.small,
     fontFamily: 'Nunito_400Regular',
     color: Colors.black,
   },
-  date: {
-    fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+  iconStarsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 1,
+    maxWidth: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconStarsCircular: {
+    width: 34,
+    height: 30,
+    position: 'relative',
+  },
+  starPosition: {
+    position: 'absolute',
+  },
+  ratingIconText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
     color: Colors.black,
   },
   divider: {
