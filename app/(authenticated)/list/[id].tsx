@@ -8,8 +8,12 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
+import Card from '@/components/Card';
 import EntryCard from '@/components/EntryCard';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
+
+type SortOption = 'date' | 'rating' | 'name';
+type FilterOption = 'all' | 'highRated' | 'recent';
 
 export default function ListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +21,9 @@ export default function ListDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [filterBy, setFilterBy] = useState<FilterOption>('all');
+  const [showSortFilter, setShowSortFilter] = useState(false);
 
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
   const { data: entries, isLoading: entriesLoading, error: entriesError } = useListEntries(id);
@@ -151,6 +158,23 @@ export default function ListDetailScreen() {
     );
   };
 
+  const handleSortFilterToggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowSortFilter(!showSortFilter);
+  };
+
+  const handleSortChange = (option: SortOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSortBy(option);
+    // TODO: Implement sorting logic
+  };
+
+  const handleFilterChange = (option: FilterOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFilterBy(option);
+    // TODO: Implement filtering logic
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
@@ -196,25 +220,6 @@ export default function ListDetailScreen() {
 
   return (
     <View style={CommonStyles.screenContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          {list.icon && (
-            <Text style={styles.headerIcon}>{list.icon}</Text>
-          )}
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {list.name}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -226,28 +231,164 @@ export default function ListDetailScreen() {
           />
         }
       >
-        {/* List Info */}
-        {list.description && (
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.description}>{list.description}</Text>
-          </View>
-        )}
-
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Ionicons name="list-outline" size={20} color={Colors.primary} />
-            <Text style={styles.statText}>
-              {entryCount} {entryCount === 1 ? 'entry' : 'entries'}
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="star" size={20} color={Colors.primary} />
-            <Text style={styles.statText} style={styles.capitalize}>
-              {list.rating_type} rating
-            </Text>
-          </View>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
         </View>
+
+        {/* List Header Card */}
+        <Card style={styles.headerCard}>
+          <View style={styles.headerCardContent}>
+            {list.icon && (
+              <View style={styles.listIconContainer}>
+                <Text style={styles.listIcon}>{list.icon}</Text>
+              </View>
+            )}
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.listName}>{list.name}</Text>
+              {list.description && (
+                <Text style={styles.listDescription}>{list.description}</Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.statsRow}>
+            <View style={styles.statBadge}>
+              <Ionicons name="list-outline" size={16} color={Colors.primary} />
+              <Text style={styles.statBadgeText}>
+                {entryCount} {entryCount === 1 ? 'entry' : 'entries'}
+              </Text>
+            </View>
+            <View style={styles.statBadge}>
+              <Ionicons name="star" size={16} color={Colors.primary} />
+              <Text style={styles.statBadgeText}>{list.rating_type}</Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Sort & Filter Bar */}
+        <View style={styles.controlsBar}>
+          <TouchableOpacity
+            style={styles.sortFilterButton}
+            onPress={handleSortFilterToggle}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="funnel-outline" size={20} color={Colors.text.primary} />
+            <Text style={styles.sortFilterButtonText}>Sort & Filter</Text>
+            <Ionicons
+              name={showSortFilter ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={Colors.text.primary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Sort & Filter Options (Expandable) */}
+        {showSortFilter && (
+          <Card style={styles.sortFilterCard}>
+            {/* Sort Options */}
+            <View style={styles.optionSection}>
+              <Text style={styles.optionSectionTitle}>Sort by</Text>
+              <View style={styles.optionButtons}>
+                <TouchableOpacity
+                  style={[styles.optionButton, sortBy === 'date' && styles.optionButtonActive]}
+                  onPress={() => handleSortChange('date')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={sortBy === 'date' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, sortBy === 'date' && styles.optionButtonTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, sortBy === 'rating' && styles.optionButtonActive]}
+                  onPress={() => handleSortChange('rating')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="star-outline"
+                    size={18}
+                    color={sortBy === 'rating' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, sortBy === 'rating' && styles.optionButtonTextActive]}>
+                    Rating
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, sortBy === 'name' && styles.optionButtonActive]}
+                  onPress={() => handleSortChange('name')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="text-outline"
+                    size={18}
+                    color={sortBy === 'name' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, sortBy === 'name' && styles.optionButtonTextActive]}>
+                    Name
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Filter Options */}
+            <View style={styles.optionSection}>
+              <Text style={styles.optionSectionTitle}>Filter</Text>
+              <View style={styles.optionButtons}>
+                <TouchableOpacity
+                  style={[styles.optionButton, filterBy === 'all' && styles.optionButtonActive]}
+                  onPress={() => handleFilterChange('all')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="apps-outline"
+                    size={18}
+                    color={filterBy === 'all' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, filterBy === 'all' && styles.optionButtonTextActive]}>
+                    All
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, filterBy === 'highRated' && styles.optionButtonActive]}
+                  onPress={() => handleFilterChange('highRated')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="trophy-outline"
+                    size={18}
+                    color={filterBy === 'highRated' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, filterBy === 'highRated' && styles.optionButtonTextActive]}>
+                    High Rated
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, filterBy === 'recent' && styles.optionButtonActive]}
+                  onPress={() => handleFilterChange('recent')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={filterBy === 'recent' ? Colors.black : Colors.gray}
+                  />
+                  <Text style={[styles.optionButtonText, filterBy === 'recent' && styles.optionButtonTextActive]}>
+                    Recent
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Card>
+        )}
 
         {/* Entries Section */}
         <View style={styles.entriesSection}>
@@ -303,16 +444,16 @@ export default function ListDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
+  content: {
+    padding: Spacing.screenPadding.horizontal,
+    paddingTop: Spacing.screenPadding.vertical,
+    paddingBottom: 100,
+  },
+  topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screenPadding.horizontal,
-    paddingTop: Spacing.gap.large,
-    paddingBottom: Spacing.gap.medium,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.background,
+    alignItems: 'center',
+    marginBottom: Spacing.gap.large,
   },
   headerButton: {
     width: 40,
@@ -324,65 +465,119 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerCenter: {
+  headerCard: {
+    marginBottom: Spacing.gap.medium,
+  },
+  headerCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.gap.medium,
+  },
+  listIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.gap.medium,
+  },
+  listIcon: {
+    fontSize: 32,
+  },
+  headerTextContainer: {
     flex: 1,
+  },
+  listName: {
+    fontSize: Typography.fontSize.h1,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.xs,
+  },
+  listDescription: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    lineHeight: 20,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
+  },
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.xs,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.gap.medium,
+    paddingVertical: Spacing.gap.small,
+    borderRadius: BorderRadius.full,
+  },
+  statBadgeText: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+    textTransform: 'capitalize',
+  },
+  controlsBar: {
+    marginBottom: Spacing.gap.medium,
+  },
+  sortFilterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.gap.small,
-    marginHorizontal: Spacing.gap.medium,
-  },
-  headerIcon: {
-    fontSize: 24,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
-    color: Colors.text.primary,
-    flex: 1,
-    textAlign: 'center',
-  },
-  content: {
-    padding: Spacing.screenPadding.horizontal,
-    paddingBottom: 100,
-  },
-  descriptionContainer: {
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.large,
-    padding: Spacing.padding.card,
+    paddingVertical: Spacing.gap.medium,
+    paddingHorizontal: Spacing.gap.large,
+  },
+  sortFilterButtonText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+  },
+  sortFilterCard: {
     marginBottom: Spacing.gap.medium,
   },
-  description: {
-    fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
-    color: Colors.text.primary,
-    lineHeight: 20,
+  optionSection: {
+    marginBottom: Spacing.gap.large,
   },
-  statsContainer: {
+  optionSectionTitle: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.small,
+  },
+  optionButtons: {
     flexDirection: 'row',
     gap: Spacing.gap.small,
-    marginBottom: Spacing.gap.section,
+    flexWrap: 'wrap',
   },
-  statItem: {
-    flex: 1,
+  optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.gap.small,
+    gap: Spacing.gap.xs,
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.large,
-    padding: Spacing.padding.card,
+    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.gap.small,
+    paddingHorizontal: Spacing.gap.medium,
   },
-  statText: {
-    fontSize: Typography.fontSize.medium,
+  optionButtonActive: {
+    backgroundColor: Colors.primary,
+  },
+  optionButtonText: {
+    fontSize: Typography.fontSize.small,
     fontFamily: 'Nunito_400Regular',
-    color: Colors.text.primary,
+    color: Colors.gray,
   },
-  capitalize: {
-    textTransform: 'capitalize',
+  optionButtonTextActive: {
+    color: Colors.black,
+    fontFamily: 'Nunito_700Bold',
   },
   entriesSection: {
     marginBottom: Spacing.gap.section,
