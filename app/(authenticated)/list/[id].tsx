@@ -236,39 +236,23 @@ export default function ListDetailScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            {list.icon && (
+              <Text style={styles.headerIcon}>{list.icon}</Text>
+            )}
+            <Text style={styles.headerTitle} numberOfLines={1}>{list.name}</Text>
+          </View>
           <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* List Header Card */}
-        <Card style={styles.headerCard}>
-          <View style={styles.headerCardContent}>
-            {list.icon && (
-              <View style={styles.listIconContainer}>
-                <Text style={styles.listIcon}>{list.icon}</Text>
-              </View>
-            )}
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.listName}>{list.name}</Text>
-              {list.description && (
-                <Text style={styles.listDescription}>{list.description}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statBadge}>
-              <Ionicons name="list-outline" size={16} color={Colors.primary} />
-              <Text style={styles.statBadgeText}>
-                {entryCount} {entryCount === 1 ? 'entry' : 'entries'}
-              </Text>
-            </View>
-            <View style={styles.statBadge}>
-              <Ionicons name="star" size={16} color={Colors.primary} />
-              <Text style={styles.statBadgeText}>{list.rating_type}</Text>
-            </View>
-          </View>
-        </Card>
+        {/* Description Card (only if description exists) */}
+        {list.description && (
+          <Card style={styles.descriptionCard}>
+            <Text style={styles.description}>{list.description}</Text>
+          </Card>
+        )}
 
         {/* Sort & Filter Bar */}
         <View style={styles.controlsBar}>
@@ -465,59 +449,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerCard: {
-    marginBottom: Spacing.gap.medium,
-  },
-  headerCardContent: {
+  headerTitleContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.gap.medium,
-  },
-  listIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.lightGray,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.gap.medium,
+    gap: Spacing.gap.small,
+    marginHorizontal: Spacing.gap.medium,
   },
-  listIcon: {
-    fontSize: 32,
+  headerIcon: {
+    fontSize: 24,
   },
-  headerTextContainer: {
-    flex: 1,
-  },
-  listName: {
-    fontSize: Typography.fontSize.h1,
+  headerTitle: {
+    fontSize: Typography.fontSize.h2,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
-    marginBottom: Spacing.gap.xs,
+    flex: 1,
+    textAlign: 'center',
   },
-  listDescription: {
+  descriptionCard: {
+    marginBottom: Spacing.gap.medium,
+  },
+  description: {
     fontSize: Typography.fontSize.medium,
     fontFamily: 'Nunito_400Regular',
-    color: Colors.gray,
-    lineHeight: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.gap.small,
-  },
-  statBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.gap.xs,
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.gap.medium,
-    paddingVertical: Spacing.gap.small,
-    borderRadius: BorderRadius.full,
-  },
-  statBadgeText: {
-    fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
     color: Colors.text.primary,
-    textTransform: 'capitalize',
+    lineHeight: 20,
   },
   controlsBar: {
     marginBottom: Spacing.gap.medium,
