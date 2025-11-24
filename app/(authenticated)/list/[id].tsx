@@ -236,15 +236,17 @@ export default function ListDetailScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            {list.icon && (
-              <Text style={styles.headerIcon}>{list.icon}</Text>
-            )}
-            <Text style={styles.headerTitle} numberOfLines={1}>{list.name}</Text>
-          </View>
           <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
+        </View>
+
+        {/* List Title and Icon */}
+        <View style={styles.titleSection}>
+          {list.icon && (
+            <Text style={styles.listIcon}>{list.icon}</Text>
+          )}
+          <Text style={styles.listName}>{list.name}</Text>
         </View>
 
         {/* Description Card (only if description exists) */}
@@ -253,23 +255,6 @@ export default function ListDetailScreen() {
             <Text style={styles.description}>{list.description}</Text>
           </Card>
         )}
-
-        {/* Sort & Filter Bar */}
-        <View style={styles.controlsBar}>
-          <TouchableOpacity
-            style={styles.sortFilterButton}
-            onPress={handleSortFilterToggle}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="funnel-outline" size={20} color={Colors.text.primary} />
-            <Text style={styles.sortFilterButtonText}>Sort & Filter</Text>
-            <Ionicons
-              name={showSortFilter ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={Colors.text.primary}
-            />
-          </TouchableOpacity>
-        </View>
 
         {/* Sort & Filter Options (Expandable) */}
         {showSortFilter && (
@@ -376,12 +361,25 @@ export default function ListDetailScreen() {
 
         {/* Entries Section */}
         <View style={styles.entriesSection}>
-          {/* Entries Header */}
+          {/* Entries Header with Sort/Filter */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Entries</Text>
-            {entryCount > 0 && (
-              <Text style={styles.entryCount}>{entryCount}</Text>
-            )}
+            <View style={styles.sectionHeaderRight}>
+              {entryCount > 0 && (
+                <Text style={styles.entryCount}>{entryCount}</Text>
+              )}
+              <TouchableOpacity
+                onPress={handleSortFilterToggle}
+                style={styles.sortFilterIcon}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="funnel-outline"
+                  size={20}
+                  color={Colors.text.primary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Empty State */}
@@ -449,23 +447,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitleContainer: {
-    flex: 1,
+  titleSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: Spacing.gap.small,
-    marginHorizontal: Spacing.gap.medium,
+    marginBottom: Spacing.gap.medium,
   },
-  headerIcon: {
-    fontSize: 24,
+  listIcon: {
+    fontSize: 32,
   },
-  headerTitle: {
-    fontSize: Typography.fontSize.h2,
+  listName: {
+    fontSize: Typography.fontSize.h1,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
     flex: 1,
-    textAlign: 'center',
   },
   descriptionCard: {
     marginBottom: Spacing.gap.medium,
@@ -475,26 +470,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     color: Colors.text.primary,
     lineHeight: 20,
-  },
-  controlsBar: {
-    marginBottom: Spacing.gap.medium,
-  },
-  sortFilterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.gap.small,
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.large,
-    paddingVertical: Spacing.gap.medium,
-    paddingHorizontal: Spacing.gap.large,
-  },
-  sortFilterButtonText: {
-    fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
-    color: Colors.text.primary,
   },
   sortFilterCard: {
     marginBottom: Spacing.gap.medium,
@@ -550,6 +525,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },
+  sectionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.small,
+  },
   entryCount: {
     fontSize: Typography.fontSize.medium,
     fontFamily: 'Nunito_700Bold',
@@ -558,6 +538,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.gap.small,
     paddingVertical: Spacing.gap.xs,
     borderRadius: BorderRadius.full,
+  },
+  sortFilterIcon: {
+    padding: Spacing.gap.xs,
   },
   entriesContainer: {
     backgroundColor: Colors.white,
