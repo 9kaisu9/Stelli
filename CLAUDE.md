@@ -13,11 +13,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Code Style Guidelines
 
 ### Icons and Emojis
-**IMPORTANT**: NEVER use emojis in code unless explicitly requested by the user. Always use icons from open-source icon libraries instead.
+**CRITICAL**: The user does NOT want emojis used in this project. NEVER use emojis in code, UI, or data unless explicitly requested by the user. Always use icons from open-source icon libraries instead.
 
 - **Preferred Icon Library**: `@expo/vector-icons` (includes Ionicons, MaterialIcons, FontAwesome, etc.)
 - **Example**: Use `<Ionicons name="restaurant" />` instead of 🍽️ emoji
-- **Only use emojis**: When the user specifically requests them or when editing existing emoji-based code
+- **User Preference**: No emojis in icon pickers, default values, or suggestions
+- **Only use emojis**: When the user specifically requests them or when editing existing emoji-based code that already contains emojis
 - **Icon resources**: https://icons.expo.fyi/
 
 ---

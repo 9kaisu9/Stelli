@@ -105,7 +105,7 @@ export default function HomeScreen() {
   };
 
   const handleListPress = (listId: string) => {
-    router.push(`/list/${listId}` as any);
+    router.push(`/(authenticated)/list/${listId}` as any);
   };
 
   const handleListLongPress = (listId: string, listName: string) => {
