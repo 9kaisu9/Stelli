@@ -53,8 +53,8 @@ export default function EntryCard({ entry, list, onPress, onLongPress, showDivid
     transform: [{ scale: scale.value }],
   }));
 
-  // Get the "Name" field from field_values (should always be field ID "1")
-  const entryName = entry.field_values['1'] || 'Untitled';
+  // Get the "Name" field from field_values
+  const entryName = entry.field_values?.name || 'Unnamed Entry';
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -74,7 +74,7 @@ export default function EntryCard({ entry, list, onPress, onLongPress, showDivid
   // Render rating inside icon circle
   const renderRatingIcon = () => {
     if (entry.rating === null || entry.rating === undefined) {
-      return <Ionicons name="star-outline" size={20} color={Colors.black} />;
+      return <Ionicons name="remove-outline" size={24} color={Colors.gray} />;
     }
 
     if (list.rating_type === 'stars') {

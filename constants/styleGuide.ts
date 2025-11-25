@@ -25,6 +25,7 @@ export const Colors = {
 
   // Semantic Colors
   border: '#000000',               // All borders
+  error: '#dc2626',                // Error states, delete actions
   text: {
     primary: '#000000',            // Main text color
     secondary: '#000000',          // Secondary text (currently same)

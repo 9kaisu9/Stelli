@@ -7,6 +7,7 @@ interface StarRatingProps {
   size?: 'small' | 'medium' | 'large';
   readonly?: boolean;
   onRatingChange?: (rating: number) => void;
+  color?: string;
 }
 
 export default function StarRating({
@@ -14,6 +15,7 @@ export default function StarRating({
   size = 'medium',
   readonly = true,
   onRatingChange,
+  color = Colors.primary,
 }: StarRatingProps) {
   const handleStarPress = (index: number) => {
     if (!readonly && onRatingChange) {
@@ -47,7 +49,7 @@ export default function StarRating({
           key={i}
           name={starIcon}
           size={starSize}
-          color={Colors.primary}
+          color={color}
           style={styles.star}
         />
       );

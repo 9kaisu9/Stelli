@@ -83,7 +83,7 @@ export default function RecentEntryCard({ entry, onPress, showDivider = true }: 
   // Render rating inside icon circle
   const renderRatingIcon = () => {
     if (entry.rating === null || entry.rating === undefined) {
-      return <Ionicons name="star-outline" size={20} color={Colors.black} />;
+      return <Ionicons name="remove-outline" size={24} color={Colors.gray} />;
     }
 
     if (entry.list.rating_type === 'stars') {

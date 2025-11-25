@@ -22,7 +22,10 @@
       "Bash(gh:*)",
       "Bash(git remote add:*)",
       "Bash(git push:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(type \"c:\\Development\\Stelli\\app\\(authenticated)\\list\\[id].tsx\")",
+      "Bash(more:*)",
+      "Bash(npx supabase gen types:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,10 +1,21 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Modal
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
-import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
@@ -28,6 +39,13 @@ interface SortCriteria {
   direction: 'asc' | 'desc';
 }
 
+interface FilterCriteria {
+  id: string;
+  key: FilterOption;
+  label: string;
+  icon: string;
+}
+
 const AVAILABLE_SORT_OPTIONS: Omit<SortCriteria, 'id' | 'direction'>[] = [
   { key: 'date', label: 'Date', icon: 'calendar-outline' },
   { key: 'rating', label: 'Rating', icon: 'star-outline' },
@@ -40,6 +58,7 @@ export default function ListDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [showSortFilter, setShowSortFilter] = useState(false);
   const [showSortFilterModal, setShowSortFilterModal] = useState(false);
@@ -54,6 +73,17 @@ export default function ListDetailScreen() {
   const [nonAppliedSortCriteria, setNonAppliedSortCriteria] = useState<SortCriteria[]>([
     { id: '2', key: 'rating', label: 'Rating', icon: 'star-outline', direction: 'desc' },
     { id: '3', key: 'name', label: 'Name', icon: 'text-outline', direction: 'asc' },
+  ]);
+
+  // Applied filter criteria
+  const [appliedFilterCriteria, setAppliedFilterCriteria] = useState<FilterCriteria[]>([
+    { id: 'f1', key: 'all', label: 'All', icon: 'apps-outline' },
+  ]);
+
+  // Non-applied filter criteria
+  const [nonAppliedFilterCriteria, setNonAppliedFilterCriteria] = useState<FilterCriteria[]>([
+    { id: 'f2', key: 'highRated', label: 'High Rated', icon: 'trophy-outline' },
+    { id: 'f3', key: 'recent', label: 'Recent', icon: 'time-outline' },
   ]);
 
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
@@ -455,130 +485,263 @@ export default function ListDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.modalScrollContent}>
-            {/* Tab Switcher */}
-            <View style={styles.modalTabSwitcher}>
-              <TabSwitcher
-                tabs={['Sort', 'Filter']}
-                activeTab={modalTab === 'sort' ? 'Sort' : 'Filter'}
-                onTabChange={(tab) => setModalTab(tab === 'Sort' ? 'sort' : 'filter')}
-              />
-            </View>
+          {/* Tab Switcher */}
+          <View style={styles.modalTabSwitcherWrapper}>
+            <TabSwitcher
+              tabs={['Sort', 'Filter']}
+              activeTab={modalTab === 'sort' ? 'Sort' : 'Filter'}
+              onTabChange={(tab) => setModalTab(tab === 'Sort' ? 'sort' : 'filter')}
+            />
+          </View>
 
-            {/* Sort Options */}
-            {modalTab === 'sort' && (
-              <View style={styles.modalOptionsContainer}>
-                <TouchableOpacity
-                  style={[styles.modalOption, sortBy === 'date' && styles.modalOptionActive]}
-                  onPress={() => handleSortChange('date')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={24}
-                    color={sortBy === 'date' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, sortBy === 'date' && styles.modalOptionTextActive]}>
-                    Date
-                  </Text>
-                  {sortBy === 'date' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, sortBy === 'rating' && styles.modalOptionActive]}
-                  onPress={() => handleSortChange('rating')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="star-outline"
-                    size={24}
-                    color={sortBy === 'rating' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, sortBy === 'rating' && styles.modalOptionTextActive]}>
-                    Rating
-                  </Text>
-                  {sortBy === 'rating' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, sortBy === 'name' && styles.modalOptionActive]}
-                  onPress={() => handleSortChange('name')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="text-outline"
-                    size={24}
-                    color={sortBy === 'name' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, sortBy === 'name' && styles.modalOptionTextActive]}>
-                    Name
-                  </Text>
-                  {sortBy === 'name' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
+          {/* Sort Options - No ScrollView wrapper to avoid nesting VirtualizedList */}
+          {modalTab === 'sort' && (
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <View style={styles.modalContent}>
+                <View style={styles.sortContainer}>
+                  {/* Active Sort Criteria Section */}
+                  <View style={styles.sortSection}>
+                    <Text style={styles.sortSectionTitle}>Active Sort</Text>
+                    <Text style={styles.sortSectionSubtitle}>
+                      Drag to reorder priority (top = highest priority)
+                    </Text>
+                    <DraggableFlatList
+                      data={appliedSortCriteria}
+                      onDragEnd={({ data }) => setAppliedSortCriteria(data)}
+                      keyExtractor={(item) => item.id}
+                      containerStyle={styles.draggableContainer}
+                      contentContainerStyle={styles.draggableContentContainer}
+                      renderItem={({ item, drag, isActive }) => (
+                          <Pressable
+                            onLongPress={drag}
+                            delayLongPress={150}
+                            style={[
+                              styles.sortCriteriaItem,
+                              styles.sortCriteriaItemActive,
+                              isActive && styles.sortCriteriaItemDragging,
+                            ]}
+                          >
+                            <Pressable
+                              onPressIn={drag}
+                              style={styles.dragHandleButton}
+                            >
+                              <Ionicons
+                                name="reorder-three"
+                                size={20}
+                                color={Colors.gray}
+                                style={styles.dragHandle}
+                              />
+                            </Pressable>
+                            <Ionicons
+                              name={item.icon as any}
+                              size={20}
+                              color={Colors.black}
+                            />
+                            <Text style={styles.sortCriteriaText}>{item.label}</Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setAppliedSortCriteria(
+                                  appliedSortCriteria.map((c) =>
+                                    c.id === item.id
+                                      ? { ...c, direction: c.direction === 'asc' ? 'desc' : 'asc' }
+                                      : c
+                                  )
+                                );
+                              }}
+                              style={styles.directionButton}
+                            >
+                              <Ionicons
+                                name={item.direction === 'asc' ? 'arrow-up' : 'arrow-down'}
+                                size={20}
+                                color={Colors.black}
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                // Move to non-applied section
+                                setNonAppliedSortCriteria([...nonAppliedSortCriteria, item]);
+                                setAppliedSortCriteria(
+                                  appliedSortCriteria.filter((c) => c.id !== item.id)
+                                );
+                              }}
+                              style={styles.removeButton}
+                            >
+                              <Ionicons name="close-circle" size={20} color={Colors.gray} />
+                            </TouchableOpacity>
+                          </Pressable>
+                      )}
+                    />
+                    {appliedSortCriteria.length === 0 && (
+                      <View style={styles.emptySection}>
+                        <Text style={styles.emptySectionText}>
+                          No active sort criteria. Add from below.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-            {/* Filter Options */}
-            {modalTab === 'filter' && (
-              <View style={styles.modalOptionsContainer}>
-                <TouchableOpacity
-                  style={[styles.modalOption, filterBy === 'all' && styles.modalOptionActive]}
-                  onPress={() => handleFilterChange('all')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="apps-outline"
-                    size={24}
-                    color={filterBy === 'all' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, filterBy === 'all' && styles.modalOptionTextActive]}>
-                    All
-                  </Text>
-                  {filterBy === 'all' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, filterBy === 'highRated' && styles.modalOptionActive]}
-                  onPress={() => handleFilterChange('highRated')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="trophy-outline"
-                    size={24}
-                    color={filterBy === 'highRated' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, filterBy === 'highRated' && styles.modalOptionTextActive]}>
-                    High Rated
-                  </Text>
-                  {filterBy === 'highRated' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, filterBy === 'recent' && styles.modalOptionActive]}
-                  onPress={() => handleFilterChange('recent')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="time-outline"
-                    size={24}
-                    color={filterBy === 'recent' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.modalOptionText, filterBy === 'recent' && styles.modalOptionTextActive]}>
-                    Recent
-                  </Text>
-                  {filterBy === 'recent' && (
-                    <Ionicons name="checkmark" size={20} color={Colors.black} style={styles.modalCheckmark} />
-                  )}
-                </TouchableOpacity>
+                  {/* Non-Active Sort Criteria Section */}
+                  <View style={styles.sortSection}>
+                    <Text style={styles.sortSectionTitle}>Available Sort Options</Text>
+                    <Text style={styles.sortSectionSubtitle}>Tap to add to active sort</Text>
+                    <View style={styles.nonActiveSortContainer}>
+                      {nonAppliedSortCriteria.map((item) => (
+                        <TouchableOpacity
+                          key={item.id}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            // Move to applied section
+                            setAppliedSortCriteria([...appliedSortCriteria, item]);
+                            setNonAppliedSortCriteria(
+                              nonAppliedSortCriteria.filter((c) => c.id !== item.id)
+                            );
+                          }}
+                          style={styles.sortCriteriaItem}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={item.icon as any}
+                            size={20}
+                            color={Colors.gray}
+                          />
+                          <Text style={[styles.sortCriteriaText, styles.sortCriteriaTextInactive]}>
+                            {item.label}
+                          </Text>
+                          <Ionicons name="add-circle-outline" size={20} color={Colors.gray} />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {nonAppliedSortCriteria.length === 0 && (
+                      <View style={styles.emptySection}>
+                        <Text style={styles.emptySectionText}>
+                          All sort options are active
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
-            )}
-          </ScrollView>
+            </GestureHandlerRootView>
+          )}
+
+          {/* Filter Options - No ScrollView wrapper to avoid nesting VirtualizedList */}
+          {modalTab === 'filter' && (
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <View style={styles.modalContent}>
+                <View style={styles.sortContainer}>
+                  {/* Active Filter Criteria Section */}
+                  <View style={styles.sortSection}>
+                    <Text style={styles.sortSectionTitle}>Active Filters</Text>
+                    <Text style={styles.sortSectionSubtitle}>
+                      Drag to reorder priority (top = highest priority)
+                    </Text>
+                    <DraggableFlatList
+                      data={appliedFilterCriteria}
+                      onDragEnd={({ data }) => setAppliedFilterCriteria(data)}
+                      keyExtractor={(item) => item.id}
+                      containerStyle={styles.draggableContainer}
+                      contentContainerStyle={styles.draggableContentContainer}
+                      renderItem={({ item, drag, isActive }) => (
+                          <Pressable
+                            onLongPress={drag}
+                            delayLongPress={150}
+                            style={[
+                              styles.sortCriteriaItem,
+                              styles.sortCriteriaItemActive,
+                              isActive && styles.sortCriteriaItemDragging,
+                            ]}
+                          >
+                            <Pressable
+                              onPressIn={drag}
+                              style={styles.dragHandleButton}
+                            >
+                              <Ionicons
+                                name="reorder-three"
+                                size={20}
+                                color={Colors.gray}
+                                style={styles.dragHandle}
+                              />
+                            </Pressable>
+                            <Ionicons
+                              name={item.icon as any}
+                              size={20}
+                              color={Colors.black}
+                            />
+                            <Text style={styles.sortCriteriaText}>{item.label}</Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                // Move to non-applied section
+                                setNonAppliedFilterCriteria([...nonAppliedFilterCriteria, item]);
+                                setAppliedFilterCriteria(
+                                  appliedFilterCriteria.filter((c) => c.id !== item.id)
+                                );
+                              }}
+                              style={styles.removeButton}
+                            >
+                              <Ionicons name="close-circle" size={20} color={Colors.gray} />
+                            </TouchableOpacity>
+                          </Pressable>
+                      )}
+                    />
+                    {appliedFilterCriteria.length === 0 && (
+                      <View style={styles.emptySection}>
+                        <Text style={styles.emptySectionText}>
+                          No active filters. Add from below.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Non-Active Filter Criteria Section */}
+                  <View style={styles.sortSection}>
+                    <Text style={styles.sortSectionTitle}>Available Filter Options</Text>
+                    <View style={styles.modalOptionsContainer}>
+                      {nonAppliedFilterCriteria.map((item) => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.sortCriteriaItem}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            // Move to applied section
+                            setAppliedFilterCriteria([...appliedFilterCriteria, item]);
+                            setNonAppliedFilterCriteria(
+                              nonAppliedFilterCriteria.filter((c) => c.id !== item.id)
+                            );
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={item.icon as any}
+                            size={20}
+                            color={Colors.gray}
+                          />
+                          <Text style={[styles.sortCriteriaText, { color: Colors.gray }]}>
+                            {item.label}
+                          </Text>
+                          <Ionicons
+                            name="add-circle"
+                            size={20}
+                            color={Colors.gray}
+                            style={styles.addIcon}
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {nonAppliedFilterCriteria.length === 0 && (
+                      <View style={styles.emptySection}>
+                        <Text style={styles.emptySectionText}>
+                          All filter options are active
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </GestureHandlerRootView>
+          )}
 
           {/* Bottom Actions */}
           <View style={styles.modalBottomActions}>
@@ -824,6 +987,17 @@ const styles = StyleSheet.create({
   modalTabSwitcher: {
     marginBottom: Spacing.gap.large,
   },
+  modalTabSwitcherWrapper: {
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingTop: Spacing.gap.section,
+    paddingBottom: Spacing.gap.medium,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingBottom: 120,
+    overflow: 'visible',
+  },
   modalOptionsContainer: {
     gap: Spacing.gap.small,
   },
@@ -860,5 +1034,89 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding.horizontal,
     paddingBottom: 32,
     zIndex: 10,
+  },
+  // Sort & Drag Styles
+  sortContainer: {
+    flex: 1,
+    gap: Spacing.gap.section,
+    overflow: 'visible',
+  },
+  sortSection: {
+    marginBottom: Spacing.gap.large,
+    overflow: 'visible',
+  },
+  sortSectionTitle: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.xs,
+  },
+  sortSectionSubtitle: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    marginBottom: Spacing.gap.medium,
+  },
+  sortCriteriaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.padding.card,
+    gap: Spacing.gap.small,
+    marginBottom: Spacing.gap.small,
+  },
+  sortCriteriaItemActive: {
+    backgroundColor: Colors.primary,
+  },
+  sortCriteriaItemDragging: {
+    backgroundColor: Colors.primaryActive,
+  },
+  dragHandle: {
+    marginRight: Spacing.gap.xs,
+  },
+  sortCriteriaText: {
+    flex: 1,
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  sortCriteriaTextInactive: {
+    color: Colors.gray,
+  },
+  directionButton: {
+    padding: Spacing.gap.xs,
+    marginLeft: Spacing.gap.xs,
+  },
+  removeButton: {
+    padding: Spacing.gap.xs,
+  },
+  nonActiveSortContainer: {
+    gap: Spacing.gap.small,
+  },
+  emptySection: {
+    padding: Spacing.gap.large,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    borderStyle: 'dashed',
+  },
+  emptySectionText: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    textAlign: 'center',
+  },
+  draggableContainer: {
+  },
+  draggableContentContainer: {
+  },
+  dragHandleButton: {
+    padding: Spacing.gap.xs,
+    marginRight: Spacing.gap.xs,
   },
 });
