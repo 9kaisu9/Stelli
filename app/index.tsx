@@ -249,10 +249,10 @@ const styles = StyleSheet.create({
   },
   formSection: {
     width: '100%',
+    gap: Spacing.gap.medium,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: Spacing.gap.large,
   },
   forgotPasswordText: {
     fontSize: Typography.fontSize.medium,
@@ -262,7 +262,6 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.gap.large,
   },
   dividerLine: {
     flex: 1,
@@ -277,7 +276,6 @@ const styles = StyleSheet.create({
   },
   socialButtons: {
     gap: Spacing.gap.medium,
-    marginBottom: Spacing.gap.large,
   },
   signUpSection: {
     flexDirection: 'row',

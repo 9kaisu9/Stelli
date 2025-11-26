@@ -75,6 +75,8 @@ interface AnimatedFieldCardProps {
   onToggle: () => void;
   onRemove: () => void;
   onFieldChange: (id: string, updates: Partial<FieldDefinition>) => void;
+  newOptionInput: string;
+  onNewOptionInputChange: (text: string) => void;
 }
 
 function AnimatedFieldCard({
@@ -84,6 +86,8 @@ function AnimatedFieldCard({
   onToggle,
   onRemove,
   onFieldChange,
+  newOptionInput,
+  onNewOptionInputChange,
 }: AnimatedFieldCardProps) {
   const height = useSharedValue(isExpanded ? 1 : 0);
   const opacity = useSharedValue(isExpanded ? 1 : 0);
@@ -198,17 +202,50 @@ function AnimatedFieldCard({
 
             {/* Options input for dropdown and multi-select */}
             {(field.type === 'dropdown' || field.type === 'multi-select') && (
-              <View style={styles.optionsContainer}>
-                <Text style={styles.fieldLabel}>Options (comma-separated)</Text>
+              <>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Options</Text>
+                </View>
+
+                {/* Display existing options */}
+                {field.options && field.options.length > 0 && (
+                  <View style={styles.optionsList}>
+                    {field.options.map((option, optIndex) => (
+                      <View key={optIndex} style={styles.optionChip}>
+                        <Text style={styles.optionChipText}>{option}</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            const newOptions = field.options?.filter((_, i) => i !== optIndex) || [];
+                            onFieldChange(field.id, { options: newOptions });
+                          }}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="close-circle" size={20} color={Colors.gray} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Add new option input */}
                 <TextInput
-                  value={field.options?.join(', ') || ''}
-                  onChangeText={(text) => {
-                    const options = text.split(',').map(opt => opt.trim()).filter(opt => opt);
-                    onFieldChange(field.id, { options });
+                  value={newOptionInput}
+                  onChangeText={onNewOptionInputChange}
+                  placeholder="Type option and press Enter"
+                  onSubmitEditing={() => {
+                    const newOption = newOptionInput.trim();
+                    if (newOption) {
+                      const currentOptions = field.options || [];
+                      onFieldChange(field.id, { options: [...currentOptions, newOption] });
+                      // Clear input
+                      onNewOptionInputChange('');
+                    }
                   }}
-                  placeholder="e.g., Option 1, Option 2, Option 3"
+                  returnKeyType="done"
+                  blurOnSubmit={false}
                 />
-              </View>
+              </>
             )}
 
             <TouchableOpacity
@@ -250,6 +287,7 @@ export default function CreateListScreen() {
   const [isPublic, setIsPublic] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedFieldIds, setExpandedFieldIds] = useState<Set<string>>(new Set());
+  const [newOptionInputs, setNewOptionInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     trackScreenView('Create List Screen');
@@ -306,12 +344,8 @@ export default function CreateListScreen() {
       });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'List created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.push(`/list/${data.id}` as any),
-        },
-      ]);
+      // Close create-list screen and navigate to the new list
+      router.replace(`/list/${data.id}` as any);
     },
     onError: (error: any) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -594,6 +628,13 @@ export default function CreateListScreen() {
                 onToggle={() => toggleFieldExpanded(field.id)}
                 onRemove={() => handleRemoveField(field.id)}
                 onFieldChange={handleFieldChange}
+                newOptionInput={newOptionInputs[field.id] || ''}
+                onNewOptionInputChange={(text) => {
+                  setNewOptionInputs(prev => ({
+                    ...prev,
+                    [field.id]: text
+                  }));
+                }}
               />
               );
             })}
@@ -852,7 +893,8 @@ const styles = StyleSheet.create({
     gap: Spacing.gap.small,
   },
   ratingTypeOptionActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primaryActive,
+    borderColor: Colors.black,
   },
   ratingTypeText: {
     fontSize: Typography.fontSize.medium,
@@ -913,7 +955,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldTypeButtonActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primaryActive,
+    borderColor: Colors.black,
   },
   fieldTypeButtonText: {
     fontSize: Typography.fontSize.small,
@@ -926,6 +969,37 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     marginBottom: Spacing.gap.medium,
+  },
+  fieldRow: {
+    marginBottom: Spacing.form.labelGap,
+  },
+  optionsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.gap.small,
+    marginBottom: Spacing.gap.medium,
+  },
+  optionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.xs,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.gap.xs,
+    paddingHorizontal: Spacing.gap.medium,
+  },
+  optionChipText: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  addOptionRow: {
+    marginTop: Spacing.gap.small,
+  },
+  addOptionInputContainer: {
+    flex: 1,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -967,7 +1041,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   privacyOptionActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primaryActive,
+    borderColor: Colors.black,
   },
   privacyIconContainer: {
     marginBottom: Spacing.gap.small,

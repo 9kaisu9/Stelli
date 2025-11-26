@@ -18,6 +18,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuid
 import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
+import FieldInput from '@/components/FieldInput';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function AddEntryScreen() {
@@ -48,20 +49,34 @@ export default function AddEntryScreen() {
     }));
   };
 
-  const validateForm = () => {
+  const isFormValid = () => {
     if (!list) return false;
 
     // Check name field (always required)
     if (!fieldValues.name || fieldValues.name.trim() === '') {
-      Alert.alert('Missing Required Field', 'Please enter a name for the entry.');
       return false;
     }
 
-    // Check required fields
+    // Check rating (required if rating type is not 'none')
+    if (list.rating_type !== 'none' && (rating === null || rating === undefined || rating === 0)) {
+      return false;
+    }
+
+    // Check required custom fields (exclude the Name field with id '1')
     for (const field of list.field_definitions || []) {
-      if (field.required && !fieldValues[field.id]) {
-        Alert.alert('Missing Required Field', `Please fill in the ${field.name} field.`);
-        return false;
+      if (field.id !== '1' && field.required) {
+        const value = fieldValues[field.id];
+        // For text fields, check if not empty or just whitespace
+        if (field.type === 'text') {
+          if (!value || value.trim() === '') {
+            return false;
+          }
+        } else {
+          // For other field types, just check if value exists
+          if (!value) {
+            return false;
+          }
+        }
       }
     }
 
@@ -70,8 +85,6 @@ export default function AddEntryScreen() {
 
   const handleSave = async () => {
     if (!list || !user) return;
-
-    if (!validateForm()) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -144,43 +157,49 @@ export default function AddEntryScreen() {
         </View>
 
         {/* Rating Section */}
-        <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>Rating</Text>
-          {list.rating_type === 'stars' && (
-            <StarRating
-              rating={rating || 0}
-              size="large"
-              readonly={false}
-              onRatingChange={setRating}
-              color={Colors.black}
-            />
-          )}
-          {list.rating_type === 'points' && (
-            <TextInput
-              value={rating?.toString() || ''}
-              onChangeText={(text) => {
-                const num = parseFloat(text);
-                setRating(isNaN(num) ? null : num);
-              }}
-              placeholder="Enter points"
-              keyboardType="numeric"
-            />
-          )}
-          {list.rating_type === 'scale' && (
-            <TextInput
-              value={rating?.toString() || ''}
-              onChangeText={(text) => {
-                const num = parseFloat(text);
-                setRating(isNaN(num) ? null : num);
-              }}
-              placeholder={`1-${list.rating_config.max}`}
-              keyboardType="numeric"
-            />
-          )}
-        </View>
+        {list.rating_type !== 'none' && (
+          <View style={styles.fieldSection}>
+            <Text style={styles.fieldLabel}>
+              Rating
+              <Text style={styles.requiredMark}> *</Text>
+            </Text>
+            {list.rating_type === 'stars' && (
+              <StarRating
+                rating={rating || 0}
+                size="large"
+                readonly={false}
+                onRatingChange={setRating}
+                color={Colors.black}
+              />
+            )}
+            {list.rating_type === 'points' && (
+              <TextInput
+                value={rating?.toString() || ''}
+                onChangeText={(text) => {
+                  const num = parseFloat(text);
+                  setRating(isNaN(num) ? null : num);
+                }}
+                placeholder="Enter points"
+                keyboardType="numeric"
+              />
+            )}
+            {list.rating_type === 'scale' && (
+              <TextInput
+                value={rating?.toString() || ''}
+                onChangeText={(text) => {
+                  const num = parseFloat(text);
+                  setRating(isNaN(num) ? null : num);
+                }}
+                placeholder={`1-${list.rating_config.max}`}
+                keyboardType="numeric"
+              />
+            )}
+          </View>
+        )}
 
-        {/* Additional Fields */}
+        {/* Additional Fields - Exclude the Name field (id: '1') */}
         {list.field_definitions
+          ?.filter((field) => field.id !== '1')
           ?.sort((a, b) => a.order - b.order)
           .map((field) => (
             <View key={field.id} style={styles.fieldSection}>
@@ -188,11 +207,10 @@ export default function AddEntryScreen() {
                 {field.name}
                 {field.required && <Text style={styles.requiredMark}> *</Text>}
               </Text>
-              <TextInput
-                value={fieldValues[field.id]?.toString() || ''}
-                onChangeText={(text) => handleFieldChange(field.id, text)}
-                placeholder={`Enter ${field.name.toLowerCase()}`}
-                keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+              <FieldInput
+                field={field}
+                value={fieldValues[field.id]}
+                onChange={(value) => handleFieldChange(field.id, value)}
               />
             </View>
           ))}
@@ -203,7 +221,7 @@ export default function AddEntryScreen() {
             label={createEntryMutation.isPending ? 'Creating...' : 'Create Entry'}
             variant="primary"
             onPress={handleSave}
-            disabled={createEntryMutation.isPending}
+            disabled={!isFormValid() || createEntryMutation.isPending}
             fullWidth
           />
         </View>
@@ -269,7 +287,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   fieldSection: {
-    marginBottom: Spacing.gap.large,
+    marginBottom: Spacing.gap.medium,
     gap: Spacing.gap.small,
   },
   fieldLabel: {

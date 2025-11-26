@@ -63,6 +63,7 @@ export default function ListDetailScreen() {
   const [showSortFilter, setShowSortFilter] = useState(false);
   const [showSortFilterModal, setShowSortFilterModal] = useState(false);
   const [modalTab, setModalTab] = useState<'sort' | 'filter'>('sort');
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   // Applied sort criteria (order matters - first has highest priority)
   const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
@@ -191,32 +192,7 @@ export default function ListDetailScreen() {
 
   const handleMoreOptions = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      list?.name || 'List Options',
-      'Choose an action',
-      [
-        {
-          text: 'Edit List',
-          onPress: handleEditList,
-        },
-        {
-          text: 'Share List',
-          onPress: () => {
-            trackEvent('Share List Initiated', { listId: id });
-            Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
-          },
-        },
-        {
-          text: 'Delete List',
-          style: 'destructive',
-          onPress: handleDeleteList,
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
+    setShowActionMenu(true);
   };
 
   const handleSortFilterToggle = () => {
@@ -755,6 +731,85 @@ export default function ListDetailScreen() {
         </View>
       </Modal>
 
+      {/* Action Menu Modal */}
+      <Modal
+        visible={showActionMenu}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowActionMenu(false)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowActionMenu(false);
+          }}
+        >
+          <View style={styles.actionMenuContainer}>
+            <View style={styles.actionMenuHeader}>
+              <Text style={styles.actionMenuTitle}>{list?.name || 'List Options'}</Text>
+              <TouchableOpacity
+                style={styles.actionMenuCloseButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowActionMenu(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={Colors.black} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.actionMenuDivider} />
+
+            <View style={styles.actionMenuButtonsContainer}>
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  setShowActionMenu(false);
+                  handleEditList();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="create-outline" size={24} color={Colors.black} />
+                  <Text style={styles.actionMenuButtonText}>Edit List</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  setShowActionMenu(false);
+                  trackEvent('Share List Initiated', { listId: id });
+                  Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="share-outline" size={24} color={Colors.black} />
+                  <Text style={styles.actionMenuButtonText}>Share List</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  setShowActionMenu(false);
+                  handleDeleteList();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="trash-outline" size={24} color={Colors.error} />
+                  <Text style={[styles.actionMenuButtonText, styles.actionMenuButtonTextDanger]}>Delete List</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
@@ -1118,5 +1173,82 @@ const styles = StyleSheet.create({
   dragHandleButton: {
     padding: Spacing.gap.xs,
     marginRight: Spacing.gap.xs,
+  },
+  actionMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+  },
+  actionMenuContainer: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.large,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+  },
+  actionMenuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.gap.large,
+    paddingHorizontal: Spacing.padding.card,
+    backgroundColor: Colors.background,
+    position: 'relative',
+  },
+  actionMenuTitle: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+    textAlign: 'center',
+  },
+  actionMenuCloseButton: {
+    position: 'absolute',
+    right: Spacing.padding.card,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.black,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  actionMenuButtonsContainer: {
+    padding: Spacing.padding.card,
+    gap: Spacing.gap.medium,
+  },
+  actionMenuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Dimensions.button.standard,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.black,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.padding.card,
+  },
+  actionMenuButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.medium,
+    width: 140,
+    justifyContent: 'flex-start',
+  },
+  actionMenuButtonText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.black,
+  },
+  actionMenuButtonTextDanger: {
+    color: Colors.error,
   },
 });

@@ -235,13 +235,13 @@ const styles = StyleSheet.create({
   },
   formSection: {
     width: '100%',
+    gap: Spacing.gap.medium,
   },
   termsText: {
     fontSize: Typography.fontSize.small,
     fontFamily: 'Nunito_400Regular',
     color: Colors.gray,
     textAlign: 'center',
-    marginBottom: Spacing.gap.large,
   },
   termsLink: {
     color: Colors.primaryActive,
@@ -251,7 +251,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: Spacing.gap.large,
   },
   signInText: {
     fontSize: Typography.fontSize.medium,

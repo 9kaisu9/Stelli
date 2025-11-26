@@ -206,7 +206,7 @@ export const CommonStyles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.padding.button,
+    paddingHorizontal: Spacing.padding.button,
   } as ViewStyle,
 
   buttonPrimary: {

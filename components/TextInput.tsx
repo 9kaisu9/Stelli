@@ -38,7 +38,7 @@ export default function TextInput({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.form.fieldGap,
+    // No marginBottom - let parent control spacing
   },
   label: {
     ...Typography.medium,

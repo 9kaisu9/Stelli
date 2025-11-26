@@ -14,10 +14,11 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useEntry, useEntryActions } from '@/lib/hooks/useEntryActions';
 import { useListDetail } from '@/lib/hooks/useListEntries';
-import { Colors, Typography, Spacing, CommonStyles, BorderRadius } from '@/constants/styleGuide';
+import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
+import FieldInput from '@/components/FieldInput';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function EntryDetailScreen() {
@@ -69,10 +70,26 @@ export default function EntryDetailScreen() {
       return false;
     }
 
-    // Check required custom fields
+    // Check rating (required if rating type is not 'none')
+    if (list.rating_type !== 'none' && (rating === null || rating === undefined || rating === 0)) {
+      return false;
+    }
+
+    // Check required custom fields (exclude the Name field with id '1')
     for (const field of list.field_definitions || []) {
-      if (field.required && !fieldValues[field.id]) {
-        return false;
+      if (field.id !== '1' && field.required) {
+        const value = fieldValues[field.id];
+        // For text fields, check if not empty or just whitespace
+        if (field.type === 'text') {
+          if (!value || value.trim() === '') {
+            return false;
+          }
+        } else {
+          // For other field types, just check if value exists
+          if (!value) {
+            return false;
+          }
+        }
       }
     }
 
@@ -227,7 +244,10 @@ export default function EntryDetailScreen() {
         <View style={styles.entryNameContainer}>
           {isEditing ? (
             <>
-              <Text style={styles.nameLabel}>Name</Text>
+              <Text style={styles.nameLabel}>
+                Name
+                <Text style={styles.requiredMark}> *</Text>
+              </Text>
               <TextInput
                 value={fieldValues.name || ''}
                 onChangeText={(text) => handleFieldChange('name', text)}
@@ -240,65 +260,83 @@ export default function EntryDetailScreen() {
         </View>
 
         {/* Rating Section - Outside Card */}
-        <View style={styles.ratingSection}>
-          {list.rating_type === 'stars' && (
-            <View style={styles.ratingField}>
-              {isEditing && <Text style={styles.ratingLabel}>Rating</Text>}
-              <StarRating
-                rating={rating || 0}
-                size="large"
-                readonly={!isEditing}
-                onRatingChange={isEditing ? setRating : undefined}
-                color={Colors.black}
-              />
-            </View>
-          )}
-          {list.rating_type === 'points' && (
-            <View style={styles.ratingField}>
-              {isEditing && <Text style={styles.ratingLabel}>Rating</Text>}
-              {isEditing ? (
-                <TextInput
-                  value={rating?.toString() || ''}
-                  onChangeText={(text) => {
-                    const num = parseFloat(text);
-                    setRating(isNaN(num) ? null : num);
-                  }}
-                  placeholder="Enter points"
-                  keyboardType="numeric"
+        {list.rating_type !== 'none' && (
+          <View style={styles.ratingSection}>
+            {list.rating_type === 'stars' && (
+              <View style={styles.ratingField}>
+                {isEditing && (
+                  <Text style={styles.ratingLabel}>
+                    Rating
+                    <Text style={styles.requiredMark}> *</Text>
+                  </Text>
+                )}
+                <StarRating
+                  rating={rating || 0}
+                  size="large"
+                  readonly={!isEditing}
+                  onRatingChange={isEditing ? setRating : undefined}
+                  color={Colors.black}
                 />
-              ) : (
-                <Text style={styles.ratingDisplayValue}>
-                  {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                </Text>
-              )}
-            </View>
-          )}
-          {list.rating_type === 'scale' && (
-            <View style={styles.ratingField}>
-              {isEditing && <Text style={styles.ratingLabel}>Rating</Text>}
-              {isEditing ? (
-                <TextInput
-                  value={rating?.toString() || ''}
-                  onChangeText={(text) => {
-                    const num = parseFloat(text);
-                    setRating(isNaN(num) ? null : num);
-                  }}
-                  placeholder={`1-${list.rating_config.max}`}
-                  keyboardType="numeric"
-                />
-              ) : (
-                <Text style={styles.ratingDisplayValue}>
-                  {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
+              </View>
+            )}
+            {list.rating_type === 'points' && (
+              <View style={styles.ratingField}>
+                {isEditing && (
+                  <Text style={styles.ratingLabel}>
+                    Rating
+                    <Text style={styles.requiredMark}> *</Text>
+                  </Text>
+                )}
+                {isEditing ? (
+                  <TextInput
+                    value={rating?.toString() || ''}
+                    onChangeText={(text) => {
+                      const num = parseFloat(text);
+                      setRating(isNaN(num) ? null : num);
+                    }}
+                    placeholder="Enter points"
+                    keyboardType="numeric"
+                  />
+                ) : (
+                  <Text style={styles.ratingDisplayValue}>
+                    {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                  </Text>
+                )}
+              </View>
+            )}
+            {list.rating_type === 'scale' && (
+              <View style={styles.ratingField}>
+                {isEditing && (
+                  <Text style={styles.ratingLabel}>
+                    Rating
+                    <Text style={styles.requiredMark}> *</Text>
+                  </Text>
+                )}
+                {isEditing ? (
+                  <TextInput
+                    value={rating?.toString() || ''}
+                    onChangeText={(text) => {
+                      const num = parseFloat(text);
+                      setRating(isNaN(num) ? null : num);
+                    }}
+                    placeholder={`1-${list.rating_config.max}`}
+                    keyboardType="numeric"
+                  />
+                ) : (
+                  <Text style={styles.ratingDisplayValue}>
+                    {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        )}
 
-        {/* Additional Fields */}
+        {/* Additional Fields - Exclude the Name field (id: '1') */}
         {isEditing ? (
           // Edit mode: Fields without container
           list.field_definitions
+            ?.filter((field) => field.id !== '1')
             ?.sort((a, b) => a.order - b.order)
             .map((field) => (
               <View key={field.id} style={styles.fieldSection}>
@@ -306,38 +344,54 @@ export default function EntryDetailScreen() {
                   {field.name}
                   {field.required && <Text style={styles.requiredMark}> *</Text>}
                 </Text>
-                <TextInput
-                  value={fieldValues[field.id]?.toString() || ''}
-                  onChangeText={(text) => handleFieldChange(field.id, text)}
-                  placeholder={`Enter ${field.name.toLowerCase()}`}
-                  keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                <FieldInput
+                  field={field}
+                  value={fieldValues[field.id]}
+                  onChange={(value) => handleFieldChange(field.id, value)}
                 />
               </View>
             ))
         ) : (
-          // View mode: Fields in white container with dividers
-          list.field_definitions && list.field_definitions.length > 0 && (
-            <View style={styles.fieldsContainer}>
-              {list.field_definitions
-                .sort((a, b) => a.order - b.order)
-                .map((field, index) => (
-                  <View key={field.id}>
-                    {index > 0 && <View style={styles.fieldDivider} />}
-                    <View style={styles.fieldRow}>
-                      <View style={styles.fieldContent}>
-                        <Text style={styles.fieldLabel}>
-                          {field.name}
-                          {field.required && <Text style={styles.requiredMark}> *</Text>}
-                        </Text>
-                        <Text style={styles.fieldValue}>
-                          {fieldValues[field.id] || 'Not set'}
-                        </Text>
+          // View mode: Fields in a container with white background and dividers
+          (() => {
+            const customFields = list.field_definitions?.filter((field) => field.id !== '1') || [];
+            // Filter out fields with no value
+            const fieldsWithValues = customFields.filter((field) => {
+              const value = fieldValues[field.id];
+              if (value === null || value === undefined) return false;
+              if (typeof value === 'string' && value.trim() === '') return false;
+              if (Array.isArray(value) && value.length === 0) return false;
+              return true;
+            });
+
+            return (
+              fieldsWithValues.length > 0 && (
+                <View style={styles.fieldsContainer}>
+                  {fieldsWithValues
+                    .sort((a, b) => a.order - b.order)
+                    .map((field, index) => (
+                      <View key={field.id}>
+                        <View style={styles.fieldRow}>
+                          <Text style={styles.fieldLabel}>
+                            {field.name}
+                            {field.required && <Text style={styles.requiredMark}> *</Text>}
+                          </Text>
+                          <FieldInput
+                            field={field}
+                            value={fieldValues[field.id]}
+                            onChange={() => {}}
+                            readonly={true}
+                          />
+                        </View>
+                        {index < fieldsWithValues.length - 1 && (
+                          <View style={styles.fieldDivider} />
+                        )}
                       </View>
-                    </View>
-                  </View>
-                ))}
-            </View>
-          )
+                    ))}
+                </View>
+              )
+            );
+          })()
         )}
 
         {/* Metadata */}
@@ -364,7 +418,7 @@ export default function EntryDetailScreen() {
                 label={updateEntryMutation.isPending ? 'Saving...' : 'Save Changes'}
                 variant="primary"
                 onPress={handleSave}
-                disabled={updateEntryMutation.isPending || !hasChanges}
+                disabled={updateEntryMutation.isPending || !canSave}
                 fullWidth
               />
             </View>
@@ -489,24 +543,25 @@ const styles = StyleSheet.create({
   },
   fieldsContainer: {
     backgroundColor: Colors.white,
-    borderRadius: BorderRadius.large,
     borderWidth: 1,
     borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
     marginBottom: Spacing.gap.section,
+    overflow: 'hidden',
   },
   fieldRow: {
-    paddingHorizontal: Spacing.padding.inList,
+    paddingHorizontal: Spacing.padding.card,
     paddingVertical: Spacing.gap.medium,
-  },
-  fieldContent: {
+    backgroundColor: Colors.white,
     gap: Spacing.gap.small,
   },
   fieldDivider: {
     height: 1,
     backgroundColor: Colors.border,
+    marginHorizontal: 0,
   },
   fieldSection: {
-    marginBottom: Spacing.gap.large,
+    marginBottom: Spacing.gap.medium,
     gap: Spacing.gap.small,
   },
   fieldLabel: {
