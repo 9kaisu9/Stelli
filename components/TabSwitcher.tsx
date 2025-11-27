@@ -1,12 +1,5 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useAnimatedStyle,
-  withSpring,
-  useSharedValue,
-  interpolateColor,
-} from 'react-native-reanimated';
-import { useEffect } from 'react';
 import { Colors, Typography, BorderRadius } from '@/constants/styleGuide';
 
 interface TabSwitcherProps {
@@ -47,37 +40,18 @@ interface AnimatedTabProps {
   onPress: () => void;
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
 function AnimatedTab({ tab, isActive, onPress }: AnimatedTabProps) {
-  const colorProgress = useSharedValue(isActive ? 1 : 0);
-
-  useEffect(() => {
-    colorProgress.value = withSpring(isActive ? 1 : 0, {
-      damping: 20,
-      stiffness: 500,
-      overshootClamping: true,
-    });
-  }, [isActive]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: interpolateColor(
-        colorProgress.value,
-        [0, 1],
-        [Colors.lightGray, Colors.primaryActive] // lightGray -> teal
-      ),
-    };
-  });
-
   return (
-    <AnimatedTouchable
-      style={[styles.tab, animatedStyle]}
+    <TouchableOpacity
+      style={[
+        styles.tab,
+        { backgroundColor: isActive ? Colors.primaryActive : Colors.lightGray },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <Text style={styles.tabText}>{tab}</Text>
-    </AnimatedTouchable>
+    </TouchableOpacity>
   );
 }
 
