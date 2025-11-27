@@ -374,7 +374,6 @@ export default function EntryDetailScreen() {
                         <View style={styles.fieldRow}>
                           <Text style={styles.fieldLabel}>
                             {field.name}
-                            {field.required && <Text style={styles.requiredMark}> *</Text>}
                           </Text>
                           <FieldInput
                             field={field}
