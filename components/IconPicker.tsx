@@ -273,7 +273,7 @@ export default function IconPicker({ selectedIcon, onSelectIcon, compact = false
       )}
 
       {/* Icon Picker Modal */}
-      <Modal
+  <Modal
         visible={modalVisible}
         animationType="fade"
         transparent={true}

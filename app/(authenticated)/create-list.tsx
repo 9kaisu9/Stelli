@@ -162,11 +162,13 @@ function AnimatedFieldCard({
           </View>
 
           <Animated.View style={animatedContentStyle}>
-            <TextInput
-              value={field.name}
-              onChangeText={(text) => onFieldChange(field.id, { name: text })}
-              placeholder="e.g., Location, Genre, Price"
-            />
+            <View style={styles.fieldInputBlock}>
+              <TextInput
+                value={field.name}
+                onChangeText={(text) => onFieldChange(field.id, { name: text })}
+                placeholder="e.g., Location, Genre, Price"
+              />
+            </View>
 
             <View style={styles.fieldTypeRow}>
               <Text style={styles.fieldLabel}>Type</Text>
@@ -249,12 +251,12 @@ function AnimatedFieldCard({
             )}
 
             <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onFieldChange(field.id, { required: !field.required });
-              }}
-              activeOpacity={0.7}
+                  style={[styles.checkboxRow, styles.checkboxSpacing]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onFieldChange(field.id, { required: !field.required });
+                  }}
+                  activeOpacity={0.7}
             >
               <Ionicons
                 name={field.required ? 'checkbox' : 'square-outline'}
@@ -939,6 +941,7 @@ const styles = StyleSheet.create({
   },
   fieldTypeRow: {
     marginBottom: Spacing.gap.medium,
+    gap: Spacing.gap.small,
   },
   fieldTypeScrollContent: {
     gap: Spacing.gap.small,
@@ -970,6 +973,9 @@ const styles = StyleSheet.create({
   optionsContainer: {
     marginBottom: Spacing.gap.medium,
   },
+  fieldInputBlock: {
+    marginBottom: Spacing.gap.medium,
+  },
   fieldRow: {
     marginBottom: Spacing.form.labelGap,
   },
@@ -997,6 +1003,7 @@ const styles = StyleSheet.create({
   },
   addOptionRow: {
     marginTop: Spacing.gap.small,
+    marginBottom: Spacing.gap.medium,
   },
   addOptionInputContainer: {
     flex: 1,
@@ -1010,6 +1017,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.medium,
     fontFamily: 'Nunito_400Regular',
     color: Colors.text.primary,
+  },
+  checkboxSpacing: {
+    marginTop: Spacing.gap.medium,
   },
   addFieldButton: {
     flexDirection: 'row',
