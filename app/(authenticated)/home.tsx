@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,8 @@ export default function HomeScreen() {
   const { deleteListMutation } = useListActions();
   const [activeTab, setActiveTab] = useState<'Mine' | 'Imported'>('Mine');
   const [refreshing, setRefreshing] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [selectedList, setSelectedList] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     trackScreenView('Home Screen');
@@ -108,29 +110,14 @@ export default function HomeScreen() {
     router.push(`/(authenticated)/list/${listId}` as any);
   };
 
+  const openActionMenu = (listId: string, listName: string) => {
+    setSelectedList({ id: listId, name: listName });
+    setShowActionMenu(true);
+  };
+
   const handleListLongPress = (listId: string, listName: string) => {
-    Alert.alert(
-      listName,
-      'Choose an action',
-      [
-        {
-          text: 'Edit',
-          onPress: () => {
-            trackEvent('Edit List Initiated', { listId });
-            router.push(`/edit-list/${listId}` as any);
-          },
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteConfirm(listId, listName),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    openActionMenu(listId, listName);
   };
 
   const handleDeleteConfirm = (listId: string, listName: string) => {
@@ -303,6 +290,95 @@ export default function HomeScreen() {
           <Ionicons name="add" size={32} color={Colors.black} />
         </TouchableOpacity>
       </View>
+
+      {/* List Action Menu */}
+      <Modal
+        visible={showActionMenu}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowActionMenu(false)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowActionMenu(false);
+          }}
+        >
+          <View style={styles.actionMenuContainer}>
+            <View style={styles.actionMenuHeader}>
+              <Text style={styles.actionMenuTitle}>{selectedList?.name || 'List Options'}</Text>
+              <TouchableOpacity
+                style={styles.actionMenuCloseButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowActionMenu(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={Colors.black} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.actionMenuDivider} />
+
+            <View style={styles.actionMenuButtonsContainer}>
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowActionMenu(false);
+                  if (selectedList) {
+                    trackEvent('Edit List Initiated', { listId: selectedList.id });
+                    router.push(`/edit-list/${selectedList.id}` as any);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="create-outline" size={24} color={Colors.black} />
+                  <Text style={styles.actionMenuButtonText}>Edit List</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowActionMenu(false);
+                  if (selectedList) {
+                    trackEvent('Share List Initiated', { listId: selectedList.id });
+                    Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="share-outline" size={24} color={Colors.black} />
+                  <Text style={styles.actionMenuButtonText}>Share List</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionMenuButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowActionMenu(false);
+                  if (selectedList) {
+                    handleDeleteConfirm(selectedList.id, selectedList.name);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionMenuButtonContent}>
+                  <Ionicons name="trash-outline" size={24} color={Colors.error} />
+                  <Text style={[styles.actionMenuButtonText, styles.actionMenuButtonTextDanger]}>Delete List</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -424,5 +500,80 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+  },
+  actionMenuContainer: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.large,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+  },
+  actionMenuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.gap.large,
+    paddingHorizontal: Spacing.padding.card,
+    backgroundColor: Colors.background,
+  },
+  actionMenuTitle: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+    textAlign: 'center',
+  },
+  actionMenuCloseButton: {
+    position: 'absolute',
+    right: Spacing.padding.card,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  actionMenuButtonsContainer: {
+    padding: Spacing.padding.card,
+    gap: Spacing.gap.medium,
+  },
+  actionMenuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Dimensions.button.standard,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+  },
+  actionMenuButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.medium,
+    width: 140,
+    justifyContent: 'flex-start',
+  },
+  actionMenuButtonText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.black,
+  },
+  actionMenuButtonTextDanger: {
+    color: Colors.error,
   },
 });
