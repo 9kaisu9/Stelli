@@ -49,6 +49,7 @@ export function useEntryActions() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['entry', data.id] });
       queryClient.invalidateQueries({ queryKey: ['listEntries', data.list_id] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
     },
   });
@@ -67,6 +68,7 @@ export function useEntryActions() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['entry', entryId] });
       queryClient.invalidateQueries({ queryKey: ['listEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
     },
   });

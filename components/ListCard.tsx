@@ -11,7 +11,7 @@ import { Colors, Typography, Spacing, BorderRadius, CommonStyles, Dimensions } f
 import { List } from '@/constants/types';
 
 interface ListCardProps {
-  list: List & { entry_count: number };
+  list: List & { entry_count: number; permission_type?: 'view' | 'edit'; is_owner?: boolean; owner_display_name?: string };
   onPress: () => void;
   onLongPress: () => void;
 }
@@ -71,8 +71,27 @@ export default function ListCard({ list, onPress, onLongPress }: ListCardProps) 
 
   // Get icon - use custom icon if set, otherwise infer from list name
   const getListIcon = () => {
-    // If list has a custom icon, use it
+    // If list has a custom icon
     if (list.icon) {
+      // Check if it's an emoji (single character or contains emoji)
+      // Emojis have length > 1 when encoded, but we should not use them as Ionicon names
+      // Instead, infer from list name when we encounter emojis
+      const isEmoji = /\p{Emoji}/u.test(list.icon) || list.icon.length <= 2;
+      if (isEmoji) {
+        // Don't use emoji, infer from list name instead
+        const listName = list.name.toLowerCase();
+        if (listName.includes('restaurant') || listName.includes('food')) {
+          return 'restaurant';
+        } else if (listName.includes('movie') || listName.includes('film')) {
+          return 'film';
+        } else if (listName.includes('book')) {
+          return 'book';
+        } else if (listName.includes('travel') || listName.includes('destination')) {
+          return 'airplane';
+        }
+        return 'list';
+      }
+      // It's a valid Ionicon name
       return list.icon;
     }
 
@@ -109,8 +128,14 @@ export default function ListCard({ list, onPress, onLongPress }: ListCardProps) 
         <Text style={styles.listName} numberOfLines={1}>
           {list.name}
         </Text>
-        <Text style={styles.metaText}>
-          {list.entry_count} {list.entry_count === 1 ? 'entry' : 'entries'} · Updated {formatDate(list.updated_at)}
+        <Text style={styles.metaText} numberOfLines={2}>
+          {[
+            `${list.entry_count} ${list.entry_count === 1 ? 'entry' : 'entries'}`,
+            !list.is_owner && list.owner_display_name ? `by ${list.owner_display_name}` : null,
+            `Updated ${formatDate(list.updated_at)}`,
+          ]
+            .filter(Boolean)
+            .join(' • ')}
         </Text>
       </View>
 

@@ -13,7 +13,7 @@ export interface RecentEntryWithList extends Entry {
  */
 export function useRecentEntries(userId: string | undefined, limit: number = 3) {
   return useQuery({
-    queryKey: ['recent-entries', userId, limit],
+    queryKey: ['recentEntries', userId, limit],
     queryFn: async () => {
       if (!userId) throw new Error('User ID is required');
 

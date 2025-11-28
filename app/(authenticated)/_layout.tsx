@@ -59,6 +59,14 @@ export default function AuthenticatedLayout() {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Screen
+        name="profile"
+        options={{
+          // Full-page push with a slide-in-from-right transition
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack>
   );
 }

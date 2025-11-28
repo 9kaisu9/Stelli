@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,9 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { useUserLists } from '@/lib/hooks/useUserLists';
 import { useRecentEntries } from '@/lib/hooks/useRecentEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
+import { useImportedLists } from '@/lib/hooks/useImportedLists';
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import ListCard from '@/components/ListCard';
@@ -27,13 +30,40 @@ export default function HomeScreen() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: lists, isLoading: listsLoading, error: listsError } = useUserLists(user?.id);
+  const { data: userLists, isLoading: userListsLoading, error: userListsError } = useUserLists(user?.id);
+  const { data: importedLists, isLoading: importedListsLoading, error: importedListsError } = useImportedLists();
   const { data: recentEntries, isLoading: entriesLoading } = useRecentEntries(user?.id, 3);
   const { deleteListMutation } = useListActions();
+
+  // Unsubscribe mutation for imported lists
+  const unsubscribeMutation = useMutation({
+    mutationFn: async (listId: string) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('list_subscriptions')
+        .delete()
+        .eq('list_id', listId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscribedLists'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
   const [activeTab, setActiveTab] = useState<'Mine' | 'Imported'>('Mine');
   const [refreshing, setRefreshing] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
-  const [selectedList, setSelectedList] = useState<{ id: string; name: string } | null>(null);
+  const [selectedList, setSelectedList] = useState<{ id: string; name: string; isImported?: boolean; permission_type?: 'view' | 'edit' } | null>(null);
+  const [shareToken, setShareToken] = useState('');
+
+  // Get the appropriate list based on active tab
+  const lists = activeTab === 'Mine' ? userLists : importedLists;
+  const listsLoading = activeTab === 'Mine' ? userListsLoading : importedListsLoading;
+  const listsError = activeTab === 'Mine' ? userListsError : importedListsError;
 
   useEffect(() => {
     trackScreenView('Home Screen');
@@ -111,13 +141,63 @@ export default function HomeScreen() {
   };
 
   const openActionMenu = (listId: string, listName: string) => {
-    setSelectedList({ id: listId, name: listName });
+    // Find the list to check if it's imported
+    const list = lists?.find(l => l.id === listId);
+    const isImported = activeTab === 'Imported' || !!list?.permission_type;
+
+    setSelectedList({
+      id: listId,
+      name: listName,
+      isImported,
+      permission_type: list?.permission_type
+    });
     setShowActionMenu(true);
   };
 
   const handleListLongPress = (listId: string, listName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     openActionMenu(listId, listName);
+  };
+
+  const handleImportToken = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const trimmedToken = shareToken.trim();
+
+    if (!trimmedToken) {
+      Alert.alert(
+        'Enter share token',
+        'Paste the share token from a list owner to import it.'
+      );
+      return;
+    }
+
+    setShareToken('');
+    router.push(`/shared/${trimmedToken}` as any);
+  };
+
+  const handleUnsubscribe = (listId: string, listName: string) => {
+    Alert.alert(
+      'Unsubscribe from List',
+      `Are you sure you want to unsubscribe from "${listName}"? You can always re-subscribe later using the share link.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unsubscribe',
+          style: 'destructive',
+          onPress: () => {
+            unsubscribeMutation.mutate(listId, {
+              onSuccess: () => {
+                Alert.alert('Success', 'Unsubscribed from list successfully');
+              },
+              onError: (error: any) => {
+                Alert.alert('Error', error.message || 'Failed to unsubscribe from list');
+              },
+            });
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteConfirm = (listId: string, listName: string) => {
@@ -148,6 +228,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['userLists', user?.id] }),
+      queryClient.invalidateQueries({ queryKey: ['subscribedLists', user?.id] }),
       queryClient.invalidateQueries({ queryKey: ['recentEntries', user?.id] }),
     ]);
     setRefreshing(false);
@@ -239,6 +320,29 @@ export default function HomeScreen() {
           <NewListButton />
         </View>
 
+        {/* Import shared list by token */}
+        <View style={styles.importContainer}>
+          <TextInput
+            style={styles.importInput}
+            placeholder="Paste share token"
+            placeholderTextColor={Colors.gray}
+            value={shareToken}
+            onChangeText={setShareToken}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={handleImportToken}
+          />
+          <TouchableOpacity
+            style={styles.importButton}
+            onPress={handleImportToken}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="download-outline" size={18} color={Colors.black} />
+            <Text style={styles.importButtonText}>Import List</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Tab Switcher */}
         <View style={styles.tabSwitcherContainer}>
           <TabSwitcher
@@ -252,16 +356,14 @@ export default function HomeScreen() {
         {(!lists || lists.length === 0) && (
           <View style={styles.emptyState}>
             <Ionicons name="list-outline" size={80} color={Colors.gray} style={styles.emptyIcon} />
-            <Text style={styles.emptyTitle}>No lists yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Create your first list to get started tracking your favorite restaurants, movies, books, or anything else!
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'Mine' ? 'No lists yet' : 'No imported lists'}
             </Text>
-            <Button
-              label="Create Your First List"
-              variant="primary"
-              onPress={handleCreateList}
-              fullWidth
-            />
+            <Text style={styles.emptySubtitle}>
+              {activeTab === 'Mine'
+                ? 'Create your first list to get started tracking your favorite restaurants, movies, books, or anything else!'
+                : 'When you import lists shared by others, they will appear here.'}
+            </Text>
           </View>
         )}
 
@@ -323,58 +425,82 @@ export default function HomeScreen() {
             <View style={styles.actionMenuDivider} />
 
             <View style={styles.actionMenuButtonsContainer}>
-              <TouchableOpacity
-                style={styles.actionMenuButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowActionMenu(false);
-                  if (selectedList) {
-                    trackEvent('Edit List Initiated', { listId: selectedList.id });
-                    router.push(`/edit-list/${selectedList.id}` as any);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.actionMenuButtonContent}>
-                  <Ionicons name="create-outline" size={24} color={Colors.black} />
-                  <Text style={styles.actionMenuButtonText}>Edit List</Text>
-                </View>
-              </TouchableOpacity>
+              {/* Show different options based on whether it's an imported list */}
+              {selectedList?.isImported ? (
+                // Imported list: Show unsubscribe option
+                <TouchableOpacity
+                  style={styles.actionMenuButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowActionMenu(false);
+                    if (selectedList) {
+                      handleUnsubscribe(selectedList.id, selectedList.name);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.actionMenuButtonContent}>
+                    <Ionicons name="log-out-outline" size={24} color={Colors.error} />
+                    <Text style={[styles.actionMenuButtonText, styles.actionMenuButtonTextDanger]}>Unsubscribe</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                // Own list: Show edit, share, and delete options
+                <>
+                  <TouchableOpacity
+                    style={styles.actionMenuButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowActionMenu(false);
+                      if (selectedList) {
+                        trackEvent('Edit List Initiated', { listId: selectedList.id });
+                        router.push(`/edit-list/${selectedList.id}` as any);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.actionMenuButtonContent}>
+                      <Ionicons name="create-outline" size={24} color={Colors.black} />
+                      <Text style={styles.actionMenuButtonText}>Edit List</Text>
+                    </View>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.actionMenuButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowActionMenu(false);
-                  if (selectedList) {
-                    trackEvent('Share List Initiated', { listId: selectedList.id });
-                    Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.actionMenuButtonContent}>
-                  <Ionicons name="share-outline" size={24} color={Colors.black} />
-                  <Text style={styles.actionMenuButtonText}>Share List</Text>
-                </View>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionMenuButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowActionMenu(false);
+                      if (selectedList) {
+                        trackEvent('Share List Initiated', { listId: selectedList.id });
+                        Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.actionMenuButtonContent}>
+                      <Ionicons name="share-outline" size={24} color={Colors.black} />
+                      <Text style={styles.actionMenuButtonText}>Share List</Text>
+                    </View>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.actionMenuButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowActionMenu(false);
-                  if (selectedList) {
-                    handleDeleteConfirm(selectedList.id, selectedList.name);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.actionMenuButtonContent}>
-                  <Ionicons name="trash-outline" size={24} color={Colors.error} />
-                  <Text style={[styles.actionMenuButtonText, styles.actionMenuButtonTextDanger]}>Delete List</Text>
-                </View>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionMenuButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowActionMenu(false);
+                      if (selectedList) {
+                        handleDeleteConfirm(selectedList.id, selectedList.name);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.actionMenuButtonContent}>
+                      <Ionicons name="trash-outline" size={24} color={Colors.error} />
+                      <Text style={[styles.actionMenuButtonText, styles.actionMenuButtonTextDanger]}>Delete List</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </Pressable>
@@ -442,6 +568,41 @@ const styles = StyleSheet.create({
   },
   newListButtonText: {
     fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  importContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.small,
+    marginBottom: Spacing.gap.medium,
+  },
+  importInput: {
+    flex: 1,
+    height: Dimensions.button.standard,
+    paddingHorizontal: Spacing.gap.medium,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.gap.xs,
+    paddingHorizontal: Spacing.gap.medium,
+    height: Dimensions.button.standard,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+  },
+  importButtonText: {
+    fontSize: Typography.fontSize.small,
     fontFamily: 'Nunito_700Bold',
     color: Colors.black,
   },

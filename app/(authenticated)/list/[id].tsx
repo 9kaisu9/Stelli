@@ -20,11 +20,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
+import { useShareList } from '@/lib/hooks/useShareList';
+import { useListPermissions } from '@/lib/hooks/useListPermissions';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
 import Card from '@/components/Card';
 import EntryCard from '@/components/EntryCard';
 import TabSwitcher from '@/components/TabSwitcher';
 import Button from '@/components/Button';
+import ShareListModal from '@/components/ShareListModal';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 import { Entry } from '@/constants/types';
 
@@ -64,6 +67,7 @@ export default function ListDetailScreen() {
   const [showSortFilterModal, setShowSortFilterModal] = useState(false);
   const [modalTab, setModalTab] = useState<'sort' | 'filter'>('sort');
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Applied sort criteria (order matters - first has highest priority)
   const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
@@ -90,6 +94,12 @@ export default function ListDetailScreen() {
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
   const { data: entries, isLoading: entriesLoading, error: entriesError } = useListEntries(id);
   const { deleteListMutation } = useListActions();
+  const { generateShareUrl } = useShareList(id);
+  const { data: permission, isLoading: permissionLoading } = useListPermissions(id);
+
+  // Permission checks - owners and users with 'edit' permission can edit
+  const isOwner = permission === 'owner';
+  const canEdit = isOwner || permission === 'edit'; // Owners and edit permission can edit
 
   useEffect(() => {
     trackScreenView('List Detail Screen', { listId: id });
@@ -112,6 +122,11 @@ export default function ListDetailScreen() {
   };
 
   const handleEntryLongPress = (entryId: string, entryName: string) => {
+    if (!canEdit) {
+      Alert.alert('View Only', 'This is a view-only list. You can view all entries, but cannot edit or add to this list.');
+      return;
+    }
+
     Alert.alert(
       entryName,
       'Choose an action',
@@ -293,9 +308,12 @@ export default function ListDetailScreen() {
             <TouchableOpacity onPress={handleOpenSortFilterModal} style={styles.headerButton}>
               <Ionicons name="funnel-outline" size={24} color={Colors.text.primary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
-              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
-            </TouchableOpacity>
+            {/* Only show action menu for list owners */}
+            {isOwner && (
+              <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
+                <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -308,6 +326,31 @@ export default function ListDetailScreen() {
         {list.description && (
           <Text style={styles.listDescription}>{list.description}</Text>
         )}
+
+        {/* Entry Count and Permission Header */}
+        <View style={styles.entryCountHeader}>
+          <Text style={styles.entryCountText}>
+            {entryCount} {entryCount === 1 ? 'Entry' : 'Entries'}
+          </Text>
+          {!isOwner && permission && (
+            <View style={[
+              styles.permissionBadge,
+              permission === 'view' ? styles.viewBadge : styles.editBadge
+            ]}>
+              <Ionicons
+                name={permission === 'view' ? 'eye-outline' : 'create-outline'}
+                size={14}
+                color={Colors.gray}
+              />
+              <Text style={[
+                styles.permissionText,
+                permission === 'view' ? styles.viewText : styles.editText
+              ]}>
+                {permission === 'view' ? 'View Only' : 'Can Edit'}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Sort & Filter Options (Expandable) */}
         {showSortFilter && (
@@ -781,8 +824,8 @@ export default function ListDetailScreen() {
                 style={styles.actionMenuButton}
                 onPress={() => {
                   setShowActionMenu(false);
+                  setShowShareModal(true);
                   trackEvent('Share List Initiated', { listId: id });
-                  Alert.alert('Coming Soon', 'Sharing feature will be available soon!');
                 }}
                 activeOpacity={0.7}
               >
@@ -810,16 +853,27 @@ export default function ListDetailScreen() {
         </Pressable>
       </Modal>
 
-      {/* Floating Action Button */}
-      <View style={styles.fabContainer}>
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleAddEntry}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={32} color={Colors.black} />
-        </TouchableOpacity>
-      </View>
+      {/* Share List Modal */}
+      <ShareListModal
+        visible={showShareModal}
+        listId={id}
+        listName={list?.name || ''}
+        onClose={() => setShowShareModal(false)}
+        onShare={generateShareUrl}
+      />
+
+      {/* Floating Action Button - Only show for users who can edit */}
+      {canEdit && (
+        <View style={styles.fabContainer}>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={handleAddEntry}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={32} color={Colors.black} />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -854,15 +908,54 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.gap.small,
   },
   listName: {
-    fontSize: Typography.fontSize.h2,
+    fontSize: Typography.fontSize.h1,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },
   listDescription: {
-    fontSize: Typography.fontSize.medium,
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    lineHeight: 24,
+    marginBottom: Spacing.gap.large,
+  },
+  entryCountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.gap.large,
+  },
+  entryCountText: {
+    fontSize: Typography.fontSize.large,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
-    marginBottom: Spacing.gap.large,
+  },
+  permissionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.xs,
+    paddingHorizontal: Spacing.gap.medium,
+    paddingVertical: Spacing.gap.xs,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  viewBadge: {
+    backgroundColor: Colors.white,
+    borderColor: Colors.border,
+  },
+  editBadge: {
+    backgroundColor: Colors.white,
+    borderColor: Colors.border,
+  },
+  permissionText: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_700Bold',
+  },
+  viewText: {
+    color: Colors.gray,
+  },
+  editText: {
+    color: Colors.gray,
   },
   sortFilterCard: {
     marginBottom: Spacing.gap.medium,

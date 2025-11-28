@@ -73,13 +73,13 @@ export interface SharedList {
   created_at: string;
 }
 
-// List Import
-export interface ListImport {
+// List Subscription (replaces ListImport)
+export interface ListSubscription {
   id: string;
-  original_list_id: string;
-  imported_by_user_id: string;
-  new_list_id: string;
-  created_at: string;
+  list_id: string;
+  user_id: string;
+  permission_type: 'view' | 'edit';
+  subscribed_at: string;
 }
 
 // For displaying recent entries with list info

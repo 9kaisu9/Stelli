@@ -34,6 +34,7 @@ export function useCreateEntry() {
     onSuccess: (data) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['listEntries', data.list_id] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
     },
   });

@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useEntry, useEntryActions } from '@/lib/hooks/useEntryActions';
 import { useListDetail } from '@/lib/hooks/useListEntries';
+import { useListPermissions } from '@/lib/hooks/useListPermissions';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
@@ -29,7 +30,12 @@ export default function EntryDetailScreen() {
 
   const { data: entry, isLoading: entryLoading, error: entryError } = useEntry(id);
   const { data: list, isLoading: listLoading } = useListDetail(entry?.list_id);
+  const { data: permission, isLoading: permissionLoading } = useListPermissions(entry?.list_id);
   const { updateEntryMutation, deleteEntryMutation } = useEntryActions();
+
+  // Permission checks - owners and users with 'edit' permission can edit
+  const isOwner = permission === 'owner';
+  const canEdit = isOwner || permission === 'edit'; // Owners and edit permission can edit
 
   // Form state
   const [rating, setRating] = useState<number | null>(null);
@@ -104,6 +110,14 @@ export default function EntryDetailScreen() {
   };
 
   const handleEdit = () => {
+    if (!canEdit) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        'Cannot Edit',
+        'This is a view-only list. You can view all entries, but cannot edit or add to this list.'
+      );
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsEditing(true);
   };
@@ -219,25 +233,28 @@ export default function EntryDetailScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.black} />
           </TouchableOpacity>
-          <View style={styles.headerRightButtons}>
-            {isEditing ? (
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancelEdit}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={24} color={Colors.black} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEdit}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="create-outline" size={24} color={Colors.black} />
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Only show edit button for list owners */}
+          {canEdit && (
+            <View style={styles.headerRightButtons}>
+              {isEditing ? (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={handleCancelEdit}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={24} color={Colors.black} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleEdit}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="create-outline" size={24} color={Colors.black} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Entry Name */}

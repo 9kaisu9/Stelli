@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "My New App",
-    "slug": "my-new-app",
+    "name": "Stelli",
+    "slug": "stelli",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ebfeff"
     },
-    "scheme": "my-new-app",
+    "scheme": "stelli",
     "ios": {
       "supportsTablet": true
     },
