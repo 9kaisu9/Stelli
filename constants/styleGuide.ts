@@ -326,6 +326,88 @@ export const CommonStyles = StyleSheet.create({
     fontWeight: Typography.fontWeight.regular,
     color: Colors.text.primary,
   } as TextStyle,
+
+  // Action Sheet / Modal Styles
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+  } as ViewStyle,
+
+  actionSheetContainer: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.large,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: '100%',
+    maxWidth: 400,
+    overflow: 'hidden',
+  } as ViewStyle,
+
+  actionSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.gap.large,
+    paddingHorizontal: Spacing.padding.card,
+    backgroundColor: Colors.background,
+  } as ViewStyle,
+
+  actionSheetTitle: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+    textAlign: 'center',
+  } as TextStyle,
+
+  actionSheetCloseButton: {
+    position: 'absolute',
+    right: Spacing.padding.card,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+
+  actionSheetOptionsContainer: {
+    padding: Spacing.padding.card,
+    gap: Spacing.gap.medium,
+  } as ViewStyle,
+
+  actionSheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Dimensions.button.standard,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+  } as ViewStyle,
+
+  actionSheetOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.medium,
+    width: 140,
+    justifyContent: 'flex-start',
+  } as ViewStyle,
+
+  actionSheetOptionText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.black,
+  } as TextStyle,
+
+  actionSheetOptionTextDanger: {
+    color: Colors.error,
+  } as TextStyle,
 });
 
 // ============================================================================
@@ -431,4 +513,32 @@ export const LayoutPatterns = {
  * - No shadow/elevation
  * - Icon: 32px size, black color
  * - Position: Fixed bottom-right (32px from bottom, 24px from right)
+ */
+
+/**
+ * Action Sheet / Modal Specifications:
+ * - Use CustomActionSheet component instead of native Alert.alert or ActionSheetIOS
+ * - Overlay: Semi-transparent black background (rgba(0, 0, 0, 0.5))
+ * - Container:
+ *   - Max width: 400px, full width on mobile
+ *   - Background: Colors.background (#ebfeff)
+ *   - Border radius: 25px (BorderRadius.large)
+ *   - 1px black border
+ * - Header (optional):
+ *   - Title: 20px Nunito Bold, center-aligned
+ *   - Close button: 40x40px circle, Colors.primary background, top-right
+ *   - Padding: 16px vertical, 14px horizontal
+ *   - Divider below header: 1px black line
+ * - Options Container:
+ *   - Padding: 14px all sides
+ *   - Gap between options: 12px
+ * - Option Buttons:
+ *   - Height: 50px (Dimensions.button.standard)
+ *   - Fully rounded (BorderRadius.full)
+ *   - Background: Colors.primary (#aae1e4)
+ *   - 1px black border
+ *   - Icon + text layout: Icon (24px) + gap (12px) + text (20px Nunito Regular)
+ *   - Destructive options: Red text/icon (Colors.error #dc2626)
+ * - Animation: Fade in/out (animationType="fade")
+ * - Dismissible: Tap outside overlay or close button
  */

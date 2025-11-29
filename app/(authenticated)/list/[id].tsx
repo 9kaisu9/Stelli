@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Modal
@@ -28,6 +27,7 @@ import EntryCard from '@/components/EntryCard';
 import TabSwitcher from '@/components/TabSwitcher';
 import Button from '@/components/Button';
 import ShareListModal from '@/components/ShareListModal';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 import { Entry } from '@/constants/types';
 
@@ -68,6 +68,14 @@ export default function ListDetailScreen() {
   const [modalTab, setModalTab] = useState<'sort' | 'filter'>('sort');
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showViewOnlySheet, setShowViewOnlySheet] = useState(false);
+  const [showEntryActionsSheet, setShowEntryActionsSheet] = useState(false);
+  const [showDeleteEntrySheet, setShowDeleteEntrySheet] = useState(false);
+  const [showDeleteListSheet, setShowDeleteListSheet] = useState(false);
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<{ id: string; name: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Applied sort criteria (order matters - first has highest priority)
   const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
@@ -123,51 +131,25 @@ export default function ListDetailScreen() {
 
   const handleEntryLongPress = (entryId: string, entryName: string) => {
     if (!canEdit) {
-      Alert.alert('View Only', 'This is a view-only list. You can view all entries, but cannot edit or add to this list.');
+      setShowViewOnlySheet(true);
       return;
     }
 
-    Alert.alert(
-      entryName,
-      'Choose an action',
-      [
-        {
-          text: 'Edit',
-          onPress: () => {
-            trackEvent('Edit Entry Initiated', { entryId });
-            router.push(`/entry/${entryId}` as any);
-          },
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteEntry(entryId, entryName),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
+    setSelectedEntry({ id: entryId, name: entryName });
+    setShowEntryActionsSheet(true);
   };
 
   const handleDeleteEntry = (entryId: string, entryName: string) => {
-    Alert.alert(
-      'Delete Entry',
-      `Are you sure you want to delete "${entryName}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            // TODO: Implement delete entry mutation
-            trackEvent('Entry Deleted', { entryId, listId: id });
-            Alert.alert('Success', 'Entry deleted successfully');
-          },
-        },
-      ]
-    );
+    setSelectedEntry({ id: entryId, name: entryName });
+    setShowDeleteEntrySheet(true);
+  };
+
+  const handleConfirmDeleteEntry = async () => {
+    if (!selectedEntry) return;
+
+    // TODO: Implement delete entry mutation
+    trackEvent('Entry Deleted', { entryId: selectedEntry.id, listId: id });
+    setShowSuccessSheet(true);
   };
 
   const handleEditList = () => {
@@ -178,31 +160,23 @@ export default function ListDetailScreen() {
 
   const handleDeleteList = () => {
     if (!list) return;
+    setShowDeleteListSheet(true);
+  };
 
-    Alert.alert(
-      'Delete List',
-      `Are you sure you want to delete "${list.name}"? This will also delete all ${entries?.length || 0} entries. This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteListMutation.mutate(id, {
-              onSuccess: () => {
-                trackEvent('List Deleted', { listId: id });
-                Alert.alert('Success', 'List deleted successfully', [
-                  { text: 'OK', onPress: () => router.back() },
-                ]);
-              },
-              onError: (error: any) => {
-                Alert.alert('Error', error.message || 'Failed to delete list');
-              },
-            });
-          },
-        },
-      ]
-    );
+  const handleConfirmDeleteList = () => {
+    deleteListMutation.mutate(id, {
+      onSuccess: () => {
+        trackEvent('List Deleted', { listId: id });
+        setShowSuccessSheet(true);
+        setTimeout(() => {
+          router.back();
+        }, 1500);
+      },
+      onError: (error: any) => {
+        setErrorMessage(error.message || 'Failed to delete list');
+        setShowErrorSheet(true);
+      },
+    });
   };
 
   const handleMoreOptions = () => {
@@ -285,6 +259,72 @@ export default function ListDetailScreen() {
   }
 
   const entryCount = entries?.length || 0;
+
+  // Action Sheet Options
+  const viewOnlyOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const entryActionsOptions: ActionSheetOption[] = [
+    {
+      label: 'Edit',
+      icon: 'create-outline',
+      onPress: () => {
+        if (selectedEntry) {
+          trackEvent('Edit Entry Initiated', { entryId: selectedEntry.id });
+          router.push(`/entry/${selectedEntry.id}` as any);
+        }
+      },
+    },
+    {
+      label: 'Delete',
+      icon: 'trash-outline',
+      onPress: () => {
+        if (selectedEntry) {
+          handleDeleteEntry(selectedEntry.id, selectedEntry.name);
+        }
+      },
+      destructive: true,
+    },
+  ];
+
+  const deleteEntryOptions: ActionSheetOption[] = [
+    {
+      label: 'Delete',
+      icon: 'trash-outline',
+      onPress: handleConfirmDeleteEntry,
+      destructive: true,
+    },
+  ];
+
+  const deleteListOptions: ActionSheetOption[] = [
+    {
+      label: 'Delete',
+      icon: 'trash-outline',
+      onPress: handleConfirmDeleteList,
+      destructive: true,
+    },
+  ];
+
+  const successOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const errorOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'close-circle-outline',
+      onPress: () => {},
+    },
+  ];
 
   return (
     <View style={CommonStyles.screenContainer}>
@@ -874,6 +914,54 @@ export default function ListDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* View Only Message */}
+      <CustomActionSheet
+        visible={showViewOnlySheet}
+        onClose={() => setShowViewOnlySheet(false)}
+        title="View Only"
+        options={viewOnlyOptions}
+      />
+
+      {/* Entry Actions Sheet */}
+      <CustomActionSheet
+        visible={showEntryActionsSheet}
+        onClose={() => setShowEntryActionsSheet(false)}
+        title={selectedEntry?.name || 'Entry Options'}
+        options={entryActionsOptions}
+      />
+
+      {/* Delete Entry Confirmation */}
+      <CustomActionSheet
+        visible={showDeleteEntrySheet}
+        onClose={() => setShowDeleteEntrySheet(false)}
+        title={`Delete "${selectedEntry?.name}"?`}
+        options={deleteEntryOptions}
+      />
+
+      {/* Delete List Confirmation */}
+      <CustomActionSheet
+        visible={showDeleteListSheet}
+        onClose={() => setShowDeleteListSheet(false)}
+        title={`Delete "${list?.name}"?\n\nThis will delete all ${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}. This action cannot be undone.`}
+        options={deleteListOptions}
+      />
+
+      {/* Success Message */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title="Success"
+        options={successOptions}
+      />
+
+      {/* Error Message */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Error'}
+        options={errorOptions}
+      />
     </View>
   );
 }

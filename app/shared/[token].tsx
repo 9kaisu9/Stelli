@@ -152,7 +152,7 @@ export default function SharedListScreen() {
     );
   }
 
-  if (error || !sharedListData) {
+  if (error || !sharedListData || !sharedListData.lists) {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle" size={64} color={Colors.gray} />

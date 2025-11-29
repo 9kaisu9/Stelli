@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useMutation } from '@tanstack/react-query';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -10,6 +11,7 @@ import { useUserLists } from '@/lib/hooks/useUserLists';
 import { useImportedLists } from '@/lib/hooks/useImportedLists';
 import Button from '@/components/Button';
 import TextInput from '@/components/TextInput';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 import { supabase } from '@/lib/supabase';
 
@@ -20,6 +22,7 @@ export default function ProfileScreen() {
   const { data: importedLists, isLoading: importedListsLoading } = useImportedLists();
   const [displayNameInput, setDisplayNameInput] = useState(profile?.display_name || '');
   const [editingName, setEditingName] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   useEffect(() => {
     setDisplayNameInput(profile?.display_name || '');
@@ -83,6 +86,64 @@ export default function ProfileScreen() {
     },
   });
 
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (imageUri: string) => {
+      if (!user) throw new Error('Not authenticated');
+
+      // Read the image file as base64
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+      });
+
+      // Generate unique filename
+      const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, {
+          contentType: `image/${fileExt}`,
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const avatarUrl = urlData.publicUrl;
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      return avatarUrl;
+    },
+    onSuccess: async () => {
+      await refreshProfile();
+      trackEvent('Avatar Updated');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Your profile picture has been updated!');
+    },
+    onError: (error: any) => {
+      console.error('Avatar upload error:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Could not update profile picture.');
+    },
+  });
+
   const handleSaveName = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateNameMutation.mutate(displayNameInput);
@@ -124,6 +185,83 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleChangeAvatar = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowAvatarPicker(true);
+  };
+
+  const pickImageFromCamera = async () => {
+    try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please allow camera access in your device settings to take a photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        trackEvent('Avatar Photo Taken');
+        updateAvatarMutation.mutate(result.assets[0].uri);
+      }
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
+
+  const pickImageFromLibrary = async () => {
+    try {
+      // Request library permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Photo Library Permission Required',
+          'Please allow photo library access in your device settings to choose a photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        trackEvent('Avatar Photo Selected');
+        updateAvatarMutation.mutate(result.assets[0].uri);
+      }
+    } catch (error: any) {
+      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to select photo. Please try again.');
+    }
+  };
+
+  // Avatar picker options
+  const avatarPickerOptions: ActionSheetOption[] = [
+    {
+      label: 'Take Photo',
+      icon: 'camera-outline',
+      onPress: pickImageFromCamera,
+    },
+    {
+      label: 'Choose from Library',
+      icon: 'images-outline',
+      onPress: pickImageFromLibrary,
+    },
+  ];
+
   return (
     <View style={CommonStyles.screenContainer}>
       <ScrollView
@@ -139,9 +277,22 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={handleChangeAvatar}
+            activeOpacity={0.8}
+          >
+            <View style={styles.avatar}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{initials}</Text>
+              )}
+            </View>
+            <View style={styles.avatarEditBadge}>
+              <Ionicons name="camera" size={16} color={Colors.black} />
+            </View>
+          </TouchableOpacity>
           {editingName ? (
             <View style={styles.nameEditRow}>
               <TextInput
@@ -273,6 +424,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Avatar Picker Modal */}
+      <CustomActionSheet
+        visible={showAvatarPicker}
+        onClose={() => setShowAvatarPicker(false)}
+        title="Change Profile Picture"
+        options={avatarPickerOptions}
+      />
     </View>
   );
 }
@@ -311,6 +470,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.gap.small,
   },
+  avatarContainer: {
+    position: 'relative',
+  },
   avatar: {
     width: 96,
     height: 96,
@@ -318,6 +480,24 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderWidth: 1,
     borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary,
+    borderWidth: 2,
+    borderColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },

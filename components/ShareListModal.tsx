@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable } from 'react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuide';
 import Button from './Button';
+import CustomActionSheet, { ActionSheetOption } from './CustomActionSheet';
 
 interface ShareListModalProps {
   visible: boolean;
@@ -24,6 +25,11 @@ export default function ShareListModal({
   const [permissionType, setPermissionType] = useState<'view' | 'edit'>('view');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showCopiedSheet, setShowCopiedSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [shareToken, setShareToken] = useState('');
 
   const handleGenerateLink = async () => {
     try {
@@ -40,16 +46,14 @@ export default function ShareListModal({
       await Clipboard.setStringAsync(shareUrl);
 
       // Show success message with the token for testing
-      Alert.alert(
-        'Link Copied!',
-        `Share link has been copied to your clipboard.\n\nFor testing in Expo Go, use the token below:\n${token}`,
-        [{ text: 'OK' }]
-      );
+      setShareToken(token);
+      setShowSuccessSheet(true);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       console.error('Error generating share link:', error);
-      Alert.alert('Error', error.message || 'Failed to generate share link');
+      setErrorMessage(error.message || 'Failed to generate share link');
+      setShowErrorSheet(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsGenerating(false);
@@ -60,6 +64,31 @@ export default function ShareListModal({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   };
+
+  // Action Sheet Options
+  const successOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const copiedOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const errorOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'close-circle-outline',
+      onPress: () => {},
+    },
+  ];
 
   return (
     <Modal
@@ -172,7 +201,7 @@ export default function ShareListModal({
                   onPress={async () => {
                     await Clipboard.setStringAsync(generatedUrl);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    Alert.alert('Copied!', 'Token copied to clipboard');
+                    setShowCopiedSheet(true);
                   }}
                   activeOpacity={0.7}
                 >
@@ -201,6 +230,30 @@ export default function ShareListModal({
           </View>
         </Pressable>
       </Pressable>
+
+      {/* Success Message */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title={`Link Copied!\n\nShare link has been copied to your clipboard.\n\nFor testing in Expo Go, use the token below:\n${shareToken}`}
+        options={successOptions}
+      />
+
+      {/* Copied Message */}
+      <CustomActionSheet
+        visible={showCopiedSheet}
+        onClose={() => setShowCopiedSheet(false)}
+        title="Token copied to clipboard"
+        options={copiedOptions}
+      />
+
+      {/* Error Message */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Error'}
+        options={errorOptions}
+      />
     </Modal>
   );
 }

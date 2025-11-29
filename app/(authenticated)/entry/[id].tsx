@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,6 +19,7 @@ import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function EntryDetailScreen() {
@@ -27,6 +27,11 @@ export default function EntryDetailScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [showCannotEditSheet, setShowCannotEditSheet] = useState(false);
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { data: entry, isLoading: entryLoading, error: entryError } = useEntry(id);
   const { data: list, isLoading: listLoading } = useListDetail(entry?.list_id);
@@ -112,10 +117,7 @@ export default function EntryDetailScreen() {
   const handleEdit = () => {
     if (!canEdit) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Alert.alert(
-        'Cannot Edit',
-        'This is a view-only list. You can view all entries, but cannot edit or add to this list.'
-      );
+      setShowCannotEditSheet(true);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -148,40 +150,31 @@ export default function EntryDetailScreen() {
 
       trackEvent('Entry Updated', { entryId: entry.id, listId: entry.list_id });
       setIsEditing(false);
-      Alert.alert('Success', 'Entry updated successfully');
+      setShowSuccessSheet(true);
     } catch (error) {
       console.error('Error updating entry:', error);
-      Alert.alert('Error', 'Failed to update entry');
+      setErrorMessage('Failed to update entry');
+      setShowErrorSheet(true);
     }
   };
 
   const handleDelete = () => {
     if (!entry) return;
+    setShowDeleteSheet(true);
+  };
 
-    Alert.alert(
-      'Delete Entry',
-      'Are you sure you want to delete this entry? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteEntryMutation.mutateAsync(entry.id);
-              trackEvent('Entry Deleted', { entryId: entry.id, listId: entry.list_id });
-              router.back();
-            } catch (error) {
-              console.error('Error deleting entry:', error);
-              Alert.alert('Error', 'Failed to delete entry');
-            }
-          },
-        },
-      ]
-    );
+  const handleConfirmDelete = async () => {
+    if (!entry) return;
+
+    try {
+      await deleteEntryMutation.mutateAsync(entry.id);
+      trackEvent('Entry Deleted', { entryId: entry.id, listId: entry.list_id });
+      router.back();
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      setErrorMessage('Failed to delete entry');
+      setShowErrorSheet(true);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -220,6 +213,40 @@ export default function EntryDetailScreen() {
   }
 
   const entryName = fieldValues.name || 'Unnamed Entry';
+
+  // Action Sheet Options
+  const cannotEditOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const successOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'checkmark-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const errorOptions: ActionSheetOption[] = [
+    {
+      label: 'OK',
+      icon: 'close-circle-outline',
+      onPress: () => {},
+    },
+  ];
+
+  const deleteOptions: ActionSheetOption[] = [
+    {
+      label: 'Delete',
+      icon: 'trash-outline',
+      onPress: handleConfirmDelete,
+      destructive: true,
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -451,6 +478,38 @@ export default function EntryDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Cannot Edit Message */}
+      <CustomActionSheet
+        visible={showCannotEditSheet}
+        onClose={() => setShowCannotEditSheet(false)}
+        title="Cannot Edit"
+        options={cannotEditOptions}
+      />
+
+      {/* Success Message */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title="Entry updated successfully"
+        options={successOptions}
+      />
+
+      {/* Error Message */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Error'}
+        options={errorOptions}
+      />
+
+      {/* Delete Confirmation */}
+      <CustomActionSheet
+        visible={showDeleteSheet}
+        onClose={() => setShowDeleteSheet(false)}
+        title="Delete this entry?\n\nThis action cannot be undone."
+        options={deleteOptions}
+      />
     </View>
   );
 }
