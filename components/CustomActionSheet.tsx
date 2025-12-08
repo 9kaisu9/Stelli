@@ -34,12 +34,15 @@ export default function CustomActionSheet({
   };
 
   const handleOptionPress = (option: ActionSheetOption) => {
+    console.log('🎯 CustomActionSheet: Option pressed:', option.label);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
-    // Execute the option's callback after a slight delay to allow modal to close
+    // Execute the option's callback after a delay to allow modal to fully close
+    // Increased delay to 500ms to ensure modal is completely dismissed before launching image picker
     setTimeout(() => {
+      console.log('🎯 CustomActionSheet: Executing option callback for:', option.label);
       option.onPress();
-    }, 100);
+    }, 500);
   };
 
   return (

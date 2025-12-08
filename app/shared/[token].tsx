@@ -169,7 +169,7 @@ export default function SharedListScreen() {
   const permissionType = sharedListData.permission_type;
   const isViewOnly = permissionType === 'view';
   const sharedBy =
-    sharedListData.shared_by_profile?.display_name || 'Someone';
+    sharedListData.profiles?.display_name || 'Someone';
 
   return (
     <View style={CommonStyles.screenContainer}>

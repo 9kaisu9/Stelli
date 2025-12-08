@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Dimensions as RNDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions as RNDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import { Colors, Typography, Spacing, CommonStyles, BorderRadius } from '@/const
 import Button from '@/components/Button';
 import TextInput from '@/components/TextInput';
 import IconPicker from '@/components/IconPicker';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 import { FieldDefinition, FieldType } from '@/constants/types';
 
@@ -290,6 +291,9 @@ export default function CreateListScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedFieldIds, setExpandedFieldIds] = useState<Set<string>>(new Set());
   const [newOptionInputs, setNewOptionInputs] = useState<Record<string, string>>({});
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [showValidationErrorSheet, setShowValidationErrorSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     trackScreenView('Create List Screen');
@@ -351,7 +355,8 @@ export default function CreateListScreen() {
     },
     onError: (error: any) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error.message || 'Failed to create list');
+      setErrorMessage(error.message || 'Failed to create list');
+      setShowErrorSheet(true);
     },
   });
 
@@ -382,7 +387,7 @@ export default function CreateListScreen() {
 
   const handleCreate = () => {
     if (!validateForm()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      setShowValidationErrorSheet(true);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -793,6 +798,34 @@ export default function CreateListScreen() {
           <AnimatedStepDot key={step} step={step} scrollPosition={scrollPosition} />
         ))}
       </View>
+
+      {/* Error Message */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Error'}
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
+
+      {/* Validation Error Message */}
+      <CustomActionSheet
+        visible={showValidationErrorSheet}
+        onClose={() => setShowValidationErrorSheet(false)}
+        title="Please fill in all required fields"
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }

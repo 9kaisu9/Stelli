@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -19,6 +18,7 @@ import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function AddEntryScreen() {
@@ -32,6 +32,8 @@ export default function AddEntryScreen() {
   // Form state
   const [rating, setRating] = useState<number | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
 
   useEffect(() => {
     trackScreenView('Add Entry Screen', { listId });
@@ -97,15 +99,13 @@ export default function AddEntryScreen() {
       });
 
       trackEvent('Entry Created', { listId, entryName: fieldValues['1'] });
-      Alert.alert('Success', 'Entry created successfully', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      setShowSuccessSheet(true);
+      setTimeout(() => {
+        router.back();
+      }, 1500);
     } catch (error) {
       console.error('Error creating entry:', error);
-      Alert.alert('Error', 'Failed to create entry');
+      setShowErrorSheet(true);
     }
   };
 
@@ -226,6 +226,34 @@ export default function AddEntryScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Success Message */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title="Entry created successfully"
+        options={[
+          {
+            label: 'OK',
+            icon: 'checkmark-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
+
+      {/* Error Message */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title="Failed to create entry"
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }

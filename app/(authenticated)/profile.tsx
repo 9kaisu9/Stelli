@@ -191,59 +191,59 @@ export default function ProfileScreen() {
   };
 
   const pickImageFromCamera = async () => {
+    console.log('📸 pickImageFromCamera called');
     try {
-      // Request camera permission
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Camera Permission Required',
-          'Please allow camera access in your device settings to take a photo.'
-        );
-        return;
-      }
+      console.log('📸 Launching camera...');
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        allowsMultipleSelection: false,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      console.log('📸 Camera result:', JSON.stringify(result));
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        console.log('📸 Photo URI:', result.assets[0].uri);
         trackEvent('Avatar Photo Taken');
         updateAvatarMutation.mutate(result.assets[0].uri);
+      } else {
+        console.log('📸 Camera was cancelled');
       }
     } catch (error: any) {
-      console.error('Camera error:', error);
+      console.error('📸 Camera error:', error);
+      console.error('📸 Error stack:', error.stack);
       Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
   const pickImageFromLibrary = async () => {
+    console.log('🖼️ pickImageFromLibrary called');
     try {
-      // Request library permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Photo Library Permission Required',
-          'Please allow photo library access in your device settings to choose a photo.'
-        );
-        return;
-      }
+      console.log('🖼️ Launching library...');
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        allowsMultipleSelection: false,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      console.log('🖼️ Library result:', JSON.stringify(result));
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        console.log('🖼️ Photo URI:', result.assets[0].uri);
         trackEvent('Avatar Photo Selected');
         updateAvatarMutation.mutate(result.assets[0].uri);
+      } else {
+        console.log('🖼️ Library was cancelled');
       }
     } catch (error: any) {
-      console.error('Image picker error:', error);
+      console.error('🖼️ Library error:', error);
+      console.error('🖼️ Error stack:', error.stack);
       Alert.alert('Error', 'Failed to select photo. Please try again.');
     }
   };
