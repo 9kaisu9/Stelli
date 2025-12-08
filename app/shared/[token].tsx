@@ -34,13 +34,21 @@ export default function SharedListScreen() {
     queryFn: async () => {
       if (!sharedListData?.lists?.id) return [];
 
+      console.log('📋 Fetching entries for list:', sharedListData.lists.id);
+
       const { data, error } = await supabase
         .from('entries')
         .select('*')
         .eq('list_id', sharedListData.lists.id)
         .order('created_at', { ascending: false }); // Show ALL entries
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching entries:', error);
+        throw error;
+      }
+
+      console.log('📋 Entries fetched:', data?.length || 0, 'entries');
+      console.log('📋 Entries data:', data);
       return data || [];
     },
     enabled: !!sharedListData?.lists?.id,
@@ -170,6 +178,12 @@ export default function SharedListScreen() {
   const isViewOnly = permissionType === 'view';
   const sharedBy =
     sharedListData.profiles?.display_name || 'Someone';
+
+  console.log('🎨 Rendering shared list screen');
+  console.log('🎨 entriesLoading:', entriesLoading);
+  console.log('🎨 entries:', entries);
+  console.log('🎨 entries?.length:', entries?.length);
+  console.log('🎨 Should render entries?', !entriesLoading && entries && entries.length > 0);
 
   return (
     <View style={CommonStyles.screenContainer}>

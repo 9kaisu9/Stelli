@@ -59,6 +59,7 @@ export default function HomeScreen() {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [selectedList, setSelectedList] = useState<{ id: string; name: string; isImported?: boolean; permission_type?: 'view' | 'edit' } | null>(null);
   const [shareToken, setShareToken] = useState('');
+  const [showListPickerForEntry, setShowListPickerForEntry] = useState(false);
 
   // Get the appropriate list based on active tab
   const lists = activeTab === 'Mine' ? userLists : importedLists;
@@ -253,7 +254,10 @@ export default function HomeScreen() {
         <Button
           label="Try Again"
           variant="primary"
-          onPress={() => window.location.reload()}
+          onPress={() => {
+            queryClient.invalidateQueries({ queryKey: ['userLists', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['subscribedLists', user?.id] });
+          }}
         />
       </View>
     );
@@ -386,7 +390,10 @@ export default function HomeScreen() {
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.fab}
-          onPress={handleCreateList}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowListPickerForEntry(true);
+          }}
           activeOpacity={0.7}
         >
           <Ionicons name="add" size={32} color={Colors.black} />
@@ -502,6 +509,105 @@ export default function HomeScreen() {
                 </>
               )}
             </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* List Picker for New Entry */}
+      <Modal
+        visible={showListPickerForEntry}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowListPickerForEntry(false)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowListPickerForEntry(false);
+          }}
+        >
+          <View style={styles.actionMenuContainer}>
+            <View style={styles.actionMenuHeader}>
+              <Text style={styles.actionMenuTitle}>Add Entry To...</Text>
+              <TouchableOpacity
+                style={styles.actionMenuCloseButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowListPickerForEntry(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={Colors.black} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.actionMenuDivider} />
+
+            <ScrollView style={styles.listPickerScroll} contentContainerStyle={styles.listPickerContent}>
+              {/* Show all lists (both owned and imported with edit permission) */}
+              {userLists && userLists.length > 0 && (
+                <>
+                  <Text style={styles.listPickerSectionTitle}>My Lists</Text>
+                  <View style={styles.listPickerListsContainer}>
+                    {userLists.map((list) => (
+                      <ListCard
+                        key={list.id}
+                        list={list}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setShowListPickerForEntry(false);
+                          router.push(`/add-entry/${list.id}` as any);
+                        }}
+                        onLongPress={() => {}}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {/* Show imported lists with edit permission */}
+              {importedLists && importedLists.filter(l => l.permission_type === 'edit').length > 0 && (
+                <>
+                  <Text style={styles.listPickerSectionTitle}>Imported Lists (Can Edit)</Text>
+                  <View style={styles.listPickerListsContainer}>
+                    {importedLists.filter(l => l.permission_type === 'edit').map((list) => (
+                      <ListCard
+                        key={list.id}
+                        list={list}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setShowListPickerForEntry(false);
+                          router.push(`/add-entry/${list.id}` as any);
+                        }}
+                        onLongPress={() => {}}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {/* No lists available */}
+              {(!userLists || userLists.length === 0) &&
+               (!importedLists || importedLists.filter(l => l.permission_type === 'edit').length === 0) && (
+                <View style={styles.noListsContainer}>
+                  <Ionicons name="list-outline" size={48} color={Colors.gray} />
+                  <Text style={styles.noListsText}>No lists available</Text>
+                  <Text style={styles.noListsSubtext}>Create a list first to add entries</Text>
+                  <TouchableOpacity
+                    style={styles.createListButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowListPickerForEntry(false);
+                      handleCreateList();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.createListButtonText}>Create List</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </Pressable>
       </Modal>
@@ -736,5 +842,52 @@ const styles = StyleSheet.create({
   },
   actionMenuButtonTextDanger: {
     color: Colors.error,
+  },
+  listPickerScroll: {
+    maxHeight: 400,
+  },
+  listPickerContent: {
+    padding: Spacing.padding.card,
+  },
+  listPickerSectionTitle: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.gray,
+    marginTop: Spacing.gap.medium,
+    marginBottom: Spacing.gap.small,
+  },
+  listPickerListsContainer: {
+    gap: Spacing.gap.small,
+  },
+  noListsContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.gap.xl,
+  },
+  noListsText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginTop: Spacing.gap.medium,
+    marginBottom: Spacing.gap.small,
+  },
+  noListsSubtext: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    textAlign: 'center',
+    marginBottom: Spacing.gap.large,
+  },
+  createListButton: {
+    paddingHorizontal: Spacing.gap.large,
+    paddingVertical: Spacing.gap.medium,
+    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+  },
+  createListButtonText: {
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
   },
 });

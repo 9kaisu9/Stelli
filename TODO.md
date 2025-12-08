@@ -4,6 +4,35 @@ This document tracks pending features, improvements, and known issues for the St
 
 ---
 
+## 🚀 Recently Completed
+
+### ✅ List Sharing & Importing
+- Fixed shared list display (entries now showing correctly)
+- Profile names display correctly on shared lists
+- Token-based list sharing fully functional
+
+### ✅ All Entries Screen
+- Created `/all-entries` route
+- Shows all user entries from all lists chronologically
+- Matches list detail screen layout
+
+### ✅ FAB Quick Entry Creation
+- Changed FAB from "Create List" to "Create Entry"
+- Shows modal with all editable lists
+- Organized by "My Lists" and "Imported Lists (Can Edit)"
+
+### ✅ Profile Picture Enhancement
+- Removed camera icon badge (gallery-only selection)
+- Added loading indicator when opening image picker
+- Instant permissions request on profile screen load
+
+### ✅ UI Improvements
+- Fixed ListCard metadata wrapping (single line with ellipsis)
+- Aligned "All Entries" title with list detail screen layout
+- Updated list picker modal to use ListCard components
+
+---
+
 ## 🚀 In Progress
 
 ### UI Consistency - Native Modal Replacement
@@ -296,22 +325,10 @@ Replace all native `Alert.alert` and `ActionSheetIOS` modals with custom `Custom
   - Consider using ScrollView for very long messages
   - Make font size responsive to content length
 
-#### 26. Imported List Metadata Doesn't Fit on One Line
-- **Location**: List card component displaying imported/subscribed lists
-- **Issue**: When displaying imported list metadata (number of entries, last updated date, original owner), the text overflows and doesn't fit on one line
-- **Expected**: Metadata should either:
-  - Wrap to multiple lines cleanly
-  - Use smaller font size
-  - Stack vertically instead of horizontally
-  - Truncate with ellipsis
-- **Severity**: MINOR (cosmetic/UX)
-- **Reproduction**: Import a list from another user and view it in the home screen
-- **Impact**: Makes the UI look cluttered and unprofessional
-- **Fix**:
-  - Redesign metadata layout to stack vertically
-  - Add proper text truncation with ellipsis
-  - Reduce font size for metadata text
-  - Use numberOfLines prop to limit text wrapping
+#### 26. ~~Imported List Metadata Doesn't Fit on One Line~~ ✅ FIXED
+- **Status**: RESOLVED
+- **Fix Applied**: Changed metadata text to single line with ellipsis truncation in ListCard component
+- **Date Fixed**: 2025-12-09
 
 ### Peer Dependencies
 - **Issue**: React 19.1 vs 19.2 conflicts
@@ -473,8 +490,8 @@ Replace all native `Alert.alert` and `ActionSheetIOS` modals with custom `Custom
 
 ## 📊 Progress Tracking
 
-**Overall Completion**: ~75%
-- Core Features: 80%
+**Overall Completion**: ~78%
+- Core Features: 85%
 - Premium Features: 0%
 - UI Consistency: 62%
 - Documentation: 40%
@@ -482,4 +499,4 @@ Replace all native `Alert.alert` and `ActionSheetIOS` modals with custom `Custom
 
 ---
 
-*Last Updated: 2025-11-29*
+*Last Updated: 2025-12-09*

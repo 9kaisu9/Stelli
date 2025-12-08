@@ -128,7 +128,7 @@ export default function ListCard({ list, onPress, onLongPress }: ListCardProps) 
         <Text style={styles.listName} numberOfLines={1}>
           {list.name}
         </Text>
-        <Text style={styles.metaText} numberOfLines={2}>
+        <Text style={styles.metaText} numberOfLines={1} ellipsizeMode="tail">
           {[
             `${list.entry_count} ${list.entry_count === 1 ? 'entry' : 'entries'}`,
             !list.is_owner && list.owner_display_name ? `by ${list.owner_display_name}` : null,

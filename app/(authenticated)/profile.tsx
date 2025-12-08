@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [displayNameInput, setDisplayNameInput] = useState(profile?.display_name || '');
   const [editingName, setEditingName] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [isPickingImage, setIsPickingImage] = useState(false);
 
   useEffect(() => {
     setDisplayNameInput(profile?.display_name || '');
@@ -30,6 +31,9 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     trackScreenView('Profile Screen');
+    // Request permissions upfront for instant picker access
+    ImagePicker.requestMediaLibraryPermissionsAsync();
+    ImagePicker.requestCameraPermissionsAsync();
   }, []);
 
   const ownedCount = ownedLists?.length || 0;
@@ -185,65 +189,47 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleChangeAvatar = () => {
+  const handleChangeAvatar = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowAvatarPicker(true);
+    setIsPickingImage(true);
+    await pickImageFromLibrary();
+    setIsPickingImage(false);
   };
 
   const pickImageFromCamera = async () => {
-    console.log('📸 pickImageFromCamera called');
     try {
-      console.log('📸 Launching camera...');
-
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        allowsMultipleSelection: false,
       });
 
-      console.log('📸 Camera result:', JSON.stringify(result));
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        console.log('📸 Photo URI:', result.assets[0].uri);
+      if (!result.canceled && result.assets[0]) {
         trackEvent('Avatar Photo Taken');
         updateAvatarMutation.mutate(result.assets[0].uri);
-      } else {
-        console.log('📸 Camera was cancelled');
       }
     } catch (error: any) {
-      console.error('📸 Camera error:', error);
-      console.error('📸 Error stack:', error.stack);
+      console.error('Camera error:', error);
       Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
   const pickImageFromLibrary = async () => {
-    console.log('🖼️ pickImageFromLibrary called');
     try {
-      console.log('🖼️ Launching library...');
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        allowsMultipleSelection: false,
       });
 
-      console.log('🖼️ Library result:', JSON.stringify(result));
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        console.log('🖼️ Photo URI:', result.assets[0].uri);
+      if (!result.canceled && result.assets[0]) {
         trackEvent('Avatar Photo Selected');
         updateAvatarMutation.mutate(result.assets[0].uri);
-      } else {
-        console.log('🖼️ Library was cancelled');
       }
     } catch (error: any) {
-      console.error('🖼️ Library error:', error);
-      console.error('🖼️ Error stack:', error.stack);
+      console.error('Image picker error:', error);
       Alert.alert('Error', 'Failed to select photo. Please try again.');
     }
   };
@@ -281,6 +267,7 @@ export default function ProfileScreen() {
             style={styles.avatarContainer}
             onPress={handleChangeAvatar}
             activeOpacity={0.8}
+            disabled={isPickingImage || updateAvatarMutation.isPending}
           >
             <View style={styles.avatar}>
               {profile?.avatar_url ? (
@@ -288,9 +275,11 @@ export default function ProfileScreen() {
               ) : (
                 <Text style={styles.avatarText}>{initials}</Text>
               )}
-            </View>
-            <View style={styles.avatarEditBadge}>
-              <Ionicons name="camera" size={16} color={Colors.black} />
+              {(isPickingImage || updateAvatarMutation.isPending) && (
+                <View style={styles.avatarLoadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.white} />
+                </View>
+              )}
             </View>
           </TouchableOpacity>
           {editingName ? (
@@ -488,16 +477,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  avatarEditBadge: {
+  avatarLoadingOverlay: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
+    left: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
-    borderWidth: 2,
-    borderColor: Colors.background,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
