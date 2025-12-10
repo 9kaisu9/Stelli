@@ -58,26 +58,28 @@ This document outlines prioritized upcoming tasks based on the current state of 
 
 ## 🟡 MEDIUM PRIORITY
 
-### 4. Sort & Filter Implementation
-**Files**: `app/(authenticated)/list/[id].tsx:204-217`
+### 4. Sort & Filter Implementation ✅ COMPLETE
+**Files**: `app/(authenticated)/list/[id].tsx`
 
-**Description**: UI exists but doesn't actually sort/filter entries.
+**Status**: ✅ Fully implemented and working
 
-**Required**:
-- Implement sorting logic (date, rating, name)
-- Implement filtering logic (all, high rated, recent)
-- Update entry list based on selected criteria
-- Persist sort/filter preferences per list
+**Completed**:
+- ✅ Sorting logic (date, rating, name) with multi-criteria support
+- ✅ Drag-to-reorder priority for sort criteria
+- ✅ Ascending/descending direction toggle
+- ✅ Rating filter with 4 modes: above, below, between, unrated
+- ✅ Date range filter with from/to date pickers
+- ✅ Inline expansion UI for filter configuration
+- ✅ Multiple filters with AND logic
+- ✅ Add/remove filter functionality
+- ✅ Filter logic correctly applied to entry list
 
-**Complexity**: Medium (3-4 hours)
-
-**Features**:
-- **Sort by Date**: Newest/oldest first
-- **Sort by Rating**: Highest/lowest first
-- **Sort by Name**: Alphabetical A-Z/Z-A
-- **Filter - All**: Show all entries
-- **Filter - High Rated**: Only entries above certain threshold
-- **Filter - Recent**: Only entries from last 7/30 days
+**Implementation Details**:
+- **Rating Filter**: 4 modes (Above/Below/Between/Unrated) with min/max range inputs
+- **Date Filter**: Custom from/to date range with DateTimePicker
+- **UI Pattern**: Inline expansion with chevron - tap to configure, remove button to delete
+- **Filter Logic**: All active filters apply with AND logic (entry must pass all filters)
+- **Default Values**: Rating defaults to full range, Date defaults to last 30 days
 
 ---
 
@@ -241,6 +243,39 @@ This document outlines prioritized upcoming tasks based on the current state of 
 
 ## 🔮 FUTURE FEATURES (Not Immediate)
 
+### Custom Field Sort & Filter (Post-MVP)
+**Description**: Extend sort/filter system to work with custom fields.
+
+**Sort by Custom Fields**:
+- Date fields: Chronological order (asc/desc)
+- Number fields: Numerical order (asc/desc)
+- Text fields: Alphabetical order (asc/desc)
+- Dropdown/Multi-select: By selected option
+- Rating fields: By rating value (asc/desc)
+- Yes/No fields: Group by true/false
+
+**Filter by Custom Fields**:
+- Date fields: Date range (from/to), before/after specific date
+- Number fields: Range (min/max), greater than, less than
+- Text fields: Contains text, starts with, exact match
+- Dropdown/Multi-select: Equals value, includes any of values
+- Rating fields: Range-based (same as main rating filter)
+- Yes/No fields: Is Yes, Is No
+
+**UI Considerations**:
+- Modal needs search/grouping for 10+ field options
+- Filter configuration needs to adapt to field type
+- Active filters should show field name + configured range
+
+**Complexity**: High (8-12 hours)
+
+**Use Cases**:
+- Restaurant list: Sort by "Last Visited" date field
+- Movie list: Filter by "Streaming Service" dropdown
+- Book list: Filter by "Genre" multi-select field
+
+---
+
 ### Premium Features (Phase 2)
 - Voice-to-text entry creation (OpenAI Whisper + GPT-4o-mini)
 - Photo attachments for entries
@@ -290,7 +325,7 @@ This document outlines prioritized upcoming tasks based on the current state of 
 3. Create edit list screen (HIGH - 4-6 hours)
 
 **Next Week**:
-4. Implement sort & filter (MEDIUM - 3-4 hours)
+4. ✅ ~~Implement sort & filter~~ (COMPLETE)
 5. Complete native modal replacement (MEDIUM - 1-2 hours)
 6. Add validation improvements (LOW - 2 hours total)
 

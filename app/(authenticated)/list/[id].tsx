@@ -7,7 +7,9 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  Modal
+  Modal,
+  TextInput,
+  Platform
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, useMemo } from 'react';
@@ -16,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
@@ -23,7 +26,6 @@ import { useShareList } from '@/lib/hooks/useShareList';
 import { useListPermissions } from '@/lib/hooks/useListPermissions';
 import { useEntryActions } from '@/lib/hooks/useEntryActions';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
-import Card from '@/components/Card';
 import EntryCard from '@/components/EntryCard';
 import TabSwitcher from '@/components/TabSwitcher';
 import Button from '@/components/Button';
@@ -33,7 +35,8 @@ import { trackScreenView, trackEvent } from '@/lib/posthog';
 import { Entry } from '@/constants/types';
 
 type SortOption = 'date' | 'rating' | 'name';
-type FilterOption = 'all' | 'highRated' | 'recent';
+type FilterType = 'rating' | 'date';
+type RatingFilterMode = 'above' | 'below' | 'between' | 'unrated';
 
 interface SortCriteria {
   id: string;
@@ -43,11 +46,26 @@ interface SortCriteria {
   direction: 'asc' | 'desc';
 }
 
+interface RatingRange {
+  min: number;
+  max: number;
+}
+
+interface DateRange {
+  from: Date | null;
+  to: Date | null;
+}
+
 interface FilterCriteria {
   id: string;
-  key: FilterOption;
+  type: FilterType;
   label: string;
   icon: string;
+  // Configuration based on type
+  ratingFilterMode?: RatingFilterMode;
+  ratingRange?: RatingRange;
+  dateRange?: DateRange;
+  datePreset?: '7days' | '30days' | '90days' | 'custom';
 }
 
 const AVAILABLE_SORT_OPTIONS: Omit<SortCriteria, 'id' | 'direction'>[] = [
@@ -62,9 +80,6 @@ export default function ListDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('date');
-  const [filterBy, setFilterBy] = useState<FilterOption>('all');
-  const [showSortFilter, setShowSortFilter] = useState(false);
   const [showSortFilterModal, setShowSortFilterModal] = useState(false);
   const [modalTab, setModalTab] = useState<'sort' | 'filter'>('sort');
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -78,6 +93,13 @@ export default function ListDetailScreen() {
   const [selectedEntry, setSelectedEntry] = useState<{ id: string; name: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Filter configuration state - inline expansion
+  const [expandedFilterId, setExpandedFilterId] = useState<string | null>(null);
+  const [activeDateFilterId, setActiveDateFilterId] = useState<string | null>(null);
+  const [activeDateField, setActiveDateField] = useState<'from' | 'to' | null>(null);
+  const [tempFromDate, setTempFromDate] = useState<Date | null>(null);
+  const [tempToDate, setTempToDate] = useState<Date | null>(null);
+
   // Applied sort criteria (order matters - first has highest priority)
   const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
     { id: '1', key: 'date', label: 'Date', icon: 'calendar-outline', direction: 'desc' },
@@ -90,14 +112,12 @@ export default function ListDetailScreen() {
   ]);
 
   // Applied filter criteria
-  const [appliedFilterCriteria, setAppliedFilterCriteria] = useState<FilterCriteria[]>([
-    { id: 'f1', key: 'all', label: 'All', icon: 'apps-outline' },
-  ]);
+  const [appliedFilterCriteria, setAppliedFilterCriteria] = useState<FilterCriteria[]>([]);
 
-  // Non-applied filter criteria
+  // Non-applied filter criteria (available to add)
   const [nonAppliedFilterCriteria, setNonAppliedFilterCriteria] = useState<FilterCriteria[]>([
-    { id: 'f2', key: 'highRated', label: 'High Rated', icon: 'trophy-outline' },
-    { id: 'f3', key: 'recent', label: 'Recent', icon: 'time-outline' },
+    { id: 'f1', type: 'rating', label: 'Rating', icon: 'star-outline' },
+    { id: 'f2', type: 'date', label: 'Date Range', icon: 'calendar-outline' },
   ]);
 
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
@@ -194,9 +214,11 @@ export default function ListDetailScreen() {
     setShowActionMenu(true);
   };
 
-  const handleSortFilterToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowSortFilter(!showSortFilter);
+  const resetDatePickerState = () => {
+    setActiveDateFilterId(null);
+    setActiveDateField(null);
+    setTempFromDate(null);
+    setTempToDate(null);
   };
 
   const handleOpenSortFilterModal = () => {
@@ -207,24 +229,71 @@ export default function ListDetailScreen() {
   const handleCloseSortFilterModal = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowSortFilterModal(false);
+    resetDatePickerState();
   };
 
   const handleApplySortFilter = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // TODO: Apply sort and filter logic
     setShowSortFilterModal(false);
+    resetDatePickerState();
   };
 
-  const handleSortChange = (option: SortOption) => {
+  const handleOpenDatePicker = (filterId: string, field: 'from' | 'to', currentValue?: Date | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSortBy(option);
-    // TODO: Implement sorting logic
+    setActiveDateFilterId(filterId);
+    setActiveDateField(field);
+
+    const fallbackDate = currentValue ? new Date(currentValue) : new Date();
+    if (field === 'from') {
+      setTempFromDate(fallbackDate);
+    } else {
+      setTempToDate(fallbackDate);
+    }
   };
 
-  const handleFilterChange = (option: FilterOption) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFilterBy(option);
-    // TODO: Implement filtering logic
+  const handleCancelDatePicker = () => {
+    resetDatePickerState();
+  };
+
+  const handleConfirmDatePicker = () => {
+    if (!activeDateFilterId || !activeDateField) {
+      resetDatePickerState();
+      return;
+    }
+
+    setAppliedFilterCriteria((prev) =>
+      prev.map((filter) => {
+        if (filter.id !== activeDateFilterId) return filter;
+
+        const currentRange = filter.dateRange || { from: null, to: null };
+        const selectedDate =
+          activeDateField === 'from'
+            ? tempFromDate || currentRange.from || new Date()
+            : tempToDate || currentRange.to || new Date();
+
+        const updatedRange = {
+          ...currentRange,
+          [activeDateField]: selectedDate,
+        };
+
+        // Keep range order sensible if user picks an earlier "to" or later "from"
+        if (updatedRange.from && updatedRange.to && updatedRange.from > updatedRange.to) {
+          if (activeDateField === 'from') {
+            updatedRange.to = selectedDate;
+          } else {
+            updatedRange.from = selectedDate;
+          }
+        }
+
+        return {
+          ...filter,
+          dateRange: updatedRange,
+          datePreset: 'custom',
+        };
+      })
+    );
+
+    resetDatePickerState();
   };
 
   const onRefresh = async () => {
@@ -291,6 +360,67 @@ export default function ListDetailScreen() {
     return entriesCopy;
   }, [entries, appliedSortCriteria]);
 
+  // Filter entries based on applied filter criteria
+  const filteredEntries = useMemo(() => {
+    if (!sortedEntries || sortedEntries.length === 0) return [];
+    if (appliedFilterCriteria.length === 0) return sortedEntries;
+
+    return sortedEntries.filter((entry) => {
+      // Entry must pass ALL active filters (AND logic)
+      for (const filter of appliedFilterCriteria) {
+        switch (filter.type) {
+          case 'rating':
+            const rating = entry.rating;
+            const mode = filter.ratingFilterMode || 'between';
+
+            if (mode === 'unrated') {
+              // Only show entries without ratings
+              if (rating !== null && rating !== undefined) {
+                return false;
+              }
+            } else if (mode === 'above' && filter.ratingRange) {
+              // Above threshold
+              if (rating === null || rating === undefined || rating <= filter.ratingRange.min) {
+                return false;
+              }
+            } else if (mode === 'below' && filter.ratingRange) {
+              // Below threshold
+              if (rating === null || rating === undefined || rating >= filter.ratingRange.max) {
+                return false;
+              }
+            } else if (mode === 'between' && filter.ratingRange) {
+              // Between range (inclusive)
+              if (rating === null || rating === undefined) return false;
+              if (rating < filter.ratingRange.min || rating > filter.ratingRange.max) {
+                return false;
+              }
+            }
+            break;
+
+          case 'date':
+            if (filter.dateRange) {
+              const entryDate = new Date(entry.created_at);
+              const { from, to } = filter.dateRange;
+
+              // Check from date
+              if (from && entryDate < from) return false;
+
+              // Check to date (set to end of day)
+              if (to) {
+                const endOfDay = new Date(to);
+                endOfDay.setHours(23, 59, 59, 999);
+                if (entryDate > endOfDay) return false;
+              }
+            }
+            break;
+        }
+      }
+
+      // Entry passed all filters
+      return true;
+    });
+  }, [sortedEntries, appliedFilterCriteria]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -320,7 +450,7 @@ export default function ListDetailScreen() {
     );
   }
 
-  const entryCount = entries?.length || 0;
+  const entryCount = filteredEntries?.length || 0;
 
   // Action Sheet Options
   const viewOnlyOptions: ActionSheetOption[] = [
@@ -454,109 +584,6 @@ export default function ListDetailScreen() {
           )}
         </View>
 
-        {/* Sort & Filter Options (Expandable) */}
-        {showSortFilter && (
-          <Card style={styles.sortFilterCard}>
-            {/* Sort Options */}
-            <View style={styles.optionSection}>
-              <Text style={styles.optionSectionTitle}>Sort by</Text>
-              <View style={styles.optionButtons}>
-                <TouchableOpacity
-                  style={[styles.optionButton, sortBy === 'date' && styles.optionButtonActive]}
-                  onPress={() => handleSortChange('date')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={18}
-                    color={sortBy === 'date' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, sortBy === 'date' && styles.optionButtonTextActive]}>
-                    Date
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.optionButton, sortBy === 'rating' && styles.optionButtonActive]}
-                  onPress={() => handleSortChange('rating')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="star-outline"
-                    size={18}
-                    color={sortBy === 'rating' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, sortBy === 'rating' && styles.optionButtonTextActive]}>
-                    Rating
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.optionButton, sortBy === 'name' && styles.optionButtonActive]}
-                  onPress={() => handleSortChange('name')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="text-outline"
-                    size={18}
-                    color={sortBy === 'name' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, sortBy === 'name' && styles.optionButtonTextActive]}>
-                    Name
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Filter Options */}
-            <View style={styles.optionSection}>
-              <Text style={styles.optionSectionTitle}>Filter</Text>
-              <View style={styles.optionButtons}>
-                <TouchableOpacity
-                  style={[styles.optionButton, filterBy === 'all' && styles.optionButtonActive]}
-                  onPress={() => handleFilterChange('all')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="apps-outline"
-                    size={18}
-                    color={filterBy === 'all' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, filterBy === 'all' && styles.optionButtonTextActive]}>
-                    All
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.optionButton, filterBy === 'highRated' && styles.optionButtonActive]}
-                  onPress={() => handleFilterChange('highRated')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="trophy-outline"
-                    size={18}
-                    color={filterBy === 'highRated' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, filterBy === 'highRated' && styles.optionButtonTextActive]}>
-                    High Rated
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.optionButton, filterBy === 'recent' && styles.optionButtonActive]}
-                  onPress={() => handleFilterChange('recent')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="time-outline"
-                    size={18}
-                    color={filterBy === 'recent' ? Colors.black : Colors.gray}
-                  />
-                  <Text style={[styles.optionButtonText, filterBy === 'recent' && styles.optionButtonTextActive]}>
-                    Recent
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Card>
-        )}
-
         {/* Entries Section */}
         <View style={styles.entriesSection}>
 
@@ -572,16 +599,16 @@ export default function ListDetailScreen() {
           )}
 
           {/* Entry Cards Container */}
-          {entries && entries.length > 0 && (
+          {filteredEntries && filteredEntries.length > 0 && (
             <View style={styles.entriesContainer}>
-              {entries.map((entry, index) => (
+              {filteredEntries.map((entry, index) => (
                 <EntryCard
                   key={entry.id}
                   entry={entry}
                   list={list}
                   onPress={() => handleEntryPress(entry.id)}
-                  onLongPress={() => handleEntryLongPress(entry.id, entry.field_values['1'] || 'Untitled')}
-                  showDivider={index < entries.length - 1}
+                  onLongPress={() => handleEntryLongPress(entry.id, entry.field_values['name'] || entry.field_values['1'] || 'Untitled')}
+                  showDivider={index < filteredEntries.length - 1}
                 />
               ))}
             </View>
@@ -747,121 +774,361 @@ export default function ListDetailScreen() {
             </GestureHandlerRootView>
           )}
 
-          {/* Filter Options - No ScrollView wrapper to avoid nesting VirtualizedList */}
+          {/* Filter Options */}
           {modalTab === 'filter' && (
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <View style={styles.modalContent}>
-                <View style={styles.sortContainer}>
-                  {/* Active Filter Criteria Section */}
-                  <View style={styles.sortSection}>
-                    <Text style={styles.sortSectionTitle}>Active Filters</Text>
-                    <Text style={styles.sortSectionSubtitle}>
-                      Drag to reorder priority (top = highest priority)
-                    </Text>
-                    <DraggableFlatList
-                      data={appliedFilterCriteria}
-                      onDragEnd={({ data }) => setAppliedFilterCriteria(data)}
-                      keyExtractor={(item) => item.id}
-                      containerStyle={styles.draggableContainer}
-                      contentContainerStyle={styles.draggableContentContainer}
-                      renderItem={({ item, drag, isActive }) => (
-                          <Pressable
-                            onLongPress={drag}
-                            delayLongPress={150}
-                            style={[
-                              styles.sortCriteriaItem,
-                              styles.sortCriteriaItemActive,
-                              isActive && styles.sortCriteriaItemDragging,
-                            ]}
-                          >
-                            <Pressable
-                              onPressIn={drag}
-                              style={styles.dragHandleButton}
-                            >
-                              <Ionicons
-                                name="reorder-three"
-                                size={20}
-                                color={Colors.gray}
-                                style={styles.dragHandle}
-                              />
-                            </Pressable>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.modalContent}>
+              <View style={styles.sortContainer}>
+                {/* Active Filter Criteria Section */}
+                <View style={styles.sortSection}>
+                  <Text style={styles.sortSectionTitle}>Active Filters</Text>
+                  <Text style={styles.sortSectionSubtitle}>
+                    All filters apply together (entries must match all)
+                  </Text>
+                  <View style={styles.nonActiveSortContainer}>
+                    {appliedFilterCriteria.map((item) => {
+                      const isExpanded = expandedFilterId === item.id;
+
+                      return (
+                        <View key={item.id} style={[
+                          styles.sortCriteriaItem,
+                          styles.sortCriteriaItemActive,
+                          styles.filterCard,
+                        ]}>
+                          {/* Filter Header */}
+                          <View style={styles.filterHeader}>
                             <Ionicons
                               name={item.icon as any}
                               size={20}
                               color={Colors.black}
                             />
-                            <Text style={styles.sortCriteriaText}>{item.label}</Text>
+                            <Text style={[styles.sortCriteriaText, { flex: 1 }]}>{item.label}</Text>
+
+                            {/* Expand/Collapse Button */}
                             <TouchableOpacity
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                // Move to non-applied section
-                                setNonAppliedFilterCriteria([...nonAppliedFilterCriteria, item]);
+                                setExpandedFilterId(isExpanded ? null : item.id);
+                              }}
+                              style={styles.expandButton}
+                            >
+                              <Ionicons
+                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                size={20}
+                                color={Colors.black}
+                              />
+                            </TouchableOpacity>
+
+                            {/* Remove Button */}
+                            <TouchableOpacity
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 setAppliedFilterCriteria(
                                   appliedFilterCriteria.filter((c) => c.id !== item.id)
                                 );
+                                setExpandedFilterId(null);
+                                resetDatePickerState();
+                                // Re-add to available
+                                const originalFilter = nonAppliedFilterCriteria.find(f => f.type === item.type);
+                                if (!originalFilter) {
+                                  setNonAppliedFilterCriteria([
+                                    ...nonAppliedFilterCriteria,
+                                    { id: `f${Date.now()}`, type: item.type, label: item.label, icon: item.icon }
+                                  ]);
+                                }
                               }}
                               style={styles.removeButton}
                             >
                               <Ionicons name="close-circle" size={20} color={Colors.gray} />
                             </TouchableOpacity>
-                          </Pressable>
-                      )}
-                    />
-                    {appliedFilterCriteria.length === 0 && (
-                      <View style={styles.emptySection}>
-                        <Text style={styles.emptySectionText}>
-                          No active filters. Add from below.
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                          </View>
 
-                  {/* Non-Active Filter Criteria Section */}
-                  <View style={styles.sortSection}>
-                    <Text style={styles.sortSectionTitle}>Available Filter Options</Text>
-                    <View style={styles.modalOptionsContainer}>
-                      {nonAppliedFilterCriteria.map((item) => (
-                        <TouchableOpacity
-                          key={item.id}
-                          style={styles.sortCriteriaItem}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            // Move to applied section
-                            setAppliedFilterCriteria([...appliedFilterCriteria, item]);
-                            setNonAppliedFilterCriteria(
-                              nonAppliedFilterCriteria.filter((c) => c.id !== item.id)
-                            );
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons
-                            name={item.icon as any}
-                            size={20}
-                            color={Colors.gray}
-                          />
-                          <Text style={[styles.sortCriteriaText, { color: Colors.gray }]}>
-                            {item.label}
-                          </Text>
-                          <Ionicons
-                            name="add-circle"
-                            size={20}
-                            color={Colors.gray}
-                            style={styles.addIcon}
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    {nonAppliedFilterCriteria.length === 0 && (
-                      <View style={styles.emptySection}>
-                        <Text style={styles.emptySectionText}>
-                          All filter options are active
-                        </Text>
-                      </View>
-                    )}
+                          {/* Divider - Always shown when expanded */}
+                          {isExpanded && (
+                            <View style={styles.filterDivider} />
+                          )}
+
+                          {/* Inline Configuration - Expanded */}
+                          {isExpanded && (
+                            <View style={styles.filterConfigInlineContent}>
+                              {/* Rating Filter Configuration */}
+                              {item.type === 'rating' && (
+                                <View style={styles.inlineConfigContent}>
+                                  <Text style={styles.inlineConfigLabel}>Filter Mode:</Text>
+                                  <View style={styles.modeButtonsRow}>
+                                    {[
+                                      { key: 'above' as const, label: 'Above', icon: 'arrow-up' },
+                                      { key: 'below' as const, label: 'Below', icon: 'arrow-down' },
+                                      { key: 'between' as const, label: 'Between', icon: 'swap-horizontal' },
+                                      { key: 'unrated' as const, label: 'Unrated', icon: 'remove-circle' },
+                                    ].map((mode) => (
+                                      <TouchableOpacity
+                                        key={mode.key}
+                                        style={[
+                                          styles.modeButton,
+                                          (item.ratingFilterMode || 'between') === mode.key && styles.modeButtonActive
+                                        ]}
+                                        onPress={() => {
+                                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                          const updated = appliedFilterCriteria.map(f =>
+                                            f.id === item.id ? { ...f, ratingFilterMode: mode.key } : f
+                                          );
+                                          setAppliedFilterCriteria(updated);
+                                        }}
+                                        activeOpacity={0.7}
+                                      >
+                                        <Ionicons
+                                          name={mode.icon as any}
+                                          size={14}
+                                          color={(item.ratingFilterMode || 'between') === mode.key ? Colors.black : Colors.gray}
+                                        />
+                                        <Text style={[
+                                          styles.modeButtonText,
+                                          (item.ratingFilterMode || 'between') === mode.key && styles.modeButtonTextActive
+                                        ]}>
+                                          {mode.label}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    ))}
+                                  </View>
+
+                                  {/* Rating Inputs */}
+                                  {item.ratingFilterMode !== 'unrated' && (
+                                    <View style={styles.ratingInputsRow}>
+                                      {(item.ratingFilterMode === 'above' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
+                                        <View style={{ flex: 1 }}>
+                                          <Text style={styles.inlineInputLabel}>
+                                            {item.ratingFilterMode === 'above' ? 'Above' : 'Min'}
+                                          </Text>
+                                          <TextInput
+                                            style={styles.inlineInput}
+                                            value={item.ratingRange?.min.toString() || '0'}
+                                            onChangeText={(text) => {
+                                              const num = parseFloat(text);
+                                              if (!isNaN(num)) {
+                                                const updated = appliedFilterCriteria.map(f =>
+                                                  f.id === item.id
+                                                    ? { ...f, ratingRange: { ...f.ratingRange, min: num, max: f.ratingRange?.max || 5 } }
+                                                    : f
+                                                );
+                                                setAppliedFilterCriteria(updated);
+                                              }
+                                            }}
+                                            keyboardType="numeric"
+                                          />
+                                        </View>
+                                      )}
+                                      {(item.ratingFilterMode === 'below' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
+                                        <View style={{ flex: 1 }}>
+                                          <Text style={styles.inlineInputLabel}>
+                                            {item.ratingFilterMode === 'below' ? 'Below' : 'Max'}
+                                          </Text>
+                                          <TextInput
+                                            style={styles.inlineInput}
+                                            value={item.ratingRange?.max.toString() || '5'}
+                                            onChangeText={(text) => {
+                                              const num = parseFloat(text);
+                                              if (!isNaN(num)) {
+                                                const updated = appliedFilterCriteria.map(f =>
+                                                  f.id === item.id
+                                                    ? { ...f, ratingRange: { min: f.ratingRange?.min || 0, max: num } }
+                                                    : f
+                                                );
+                                                setAppliedFilterCriteria(updated);
+                                              }
+                                            }}
+                                            keyboardType="numeric"
+                                          />
+                                        </View>
+                                      )}
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+
+                              {/* Date Filter Configuration */}
+                              {item.type === 'date' && (
+                                <View style={styles.inlineConfigContent}>
+                                  <View style={styles.ratingInputsRow}>
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={styles.inlineInputLabel}>From</Text>
+                                      <TouchableOpacity
+                                        style={styles.inlineInput}
+                                        onPress={() =>
+                                          handleOpenDatePicker(
+                                            item.id,
+                                            'from',
+                                            item.dateRange?.from ? new Date(item.dateRange.from) : null
+                                          )
+                                        }
+                                        activeOpacity={0.7}
+                                      >
+                                        <Text
+                                          style={[
+                                            styles.inlineInputText,
+                                            !item.dateRange?.from && styles.inlineInputPlaceholder,
+                                          ]}
+                                        >
+                                          {item.dateRange?.from ? new Date(item.dateRange.from).toLocaleDateString() : 'Select date'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={styles.inlineInputLabel}>To</Text>
+                                      <TouchableOpacity
+                                        style={styles.inlineInput}
+                                        onPress={() =>
+                                          handleOpenDatePicker(
+                                            item.id,
+                                            'to',
+                                            item.dateRange?.to ? new Date(item.dateRange.to) : null
+                                          )
+                                        }
+                                        activeOpacity={0.7}
+                                      >
+                                        <Text
+                                          style={[
+                                            styles.inlineInputText,
+                                            !item.dateRange?.to && styles.inlineInputPlaceholder,
+                                          ]}
+                                        >
+                                          {item.dateRange?.to ? new Date(item.dateRange.to).toLocaleDateString() : 'Select date'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    </View>
+                                  </View>
+                                  {activeDateFilterId === item.id && activeDateField && (
+                                    <View style={styles.datePickerContainer}>
+                                      <DateTimePicker
+                                        value={
+                                          activeDateField === 'from'
+                                            ? tempFromDate || (item.dateRange?.from ? new Date(item.dateRange.from) : new Date())
+                                            : tempToDate || (item.dateRange?.to ? new Date(item.dateRange.to) : new Date())
+                                        }
+                                        mode="date"
+                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        onChange={(event, selectedDate) => {
+                                          if (selectedDate) {
+                                            if (activeDateField === 'from') {
+                                              setTempFromDate(selectedDate);
+                                            } else {
+                                              setTempToDate(selectedDate);
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      <View style={styles.datePickerActions}>
+                                        <TouchableOpacity
+                                          style={styles.datePickerActionButton}
+                                          onPress={() => {
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                            handleCancelDatePicker();
+                                          }}
+                                          activeOpacity={0.7}
+                                        >
+                                          <Text style={styles.datePickerCancelText}>Cancel</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                          style={[styles.datePickerActionButton, styles.datePickerConfirmButton]}
+                                          onPress={() => {
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                            handleConfirmDatePicker();
+                                          }}
+                                          activeOpacity={0.7}
+                                        >
+                                          <Text style={styles.datePickerConfirmText}>Set Date</Text>
+                                        </TouchableOpacity>
+                                      </View>
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
+                  {appliedFilterCriteria.length === 0 && (
+                    <View style={styles.emptySection}>
+                      <Text style={styles.emptySectionText}>
+                        No active filters. Tap options below to add.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Available Filter Options Section */}
+                <View style={styles.sortSection}>
+                  <Text style={styles.sortSectionTitle}>Add Filter</Text>
+                  <View style={styles.modalOptionsContainer}>
+                    {nonAppliedFilterCriteria.map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.sortCriteriaItem}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+                          // Add filter with default values
+                          let newFilter: FilterCriteria;
+                          if (item.type === 'rating') {
+                            const max = list?.rating_type === 'stars' ? 5 : list?.rating_type === 'scale' ? 10 : 100;
+                            const min = list?.rating_type === 'stars' ? 0 : 1;
+                            newFilter = {
+                              ...item,
+                              ratingFilterMode: 'between',
+                              ratingRange: { min, max }
+                            };
+                          } else if (item.type === 'date') {
+                            const now = new Date();
+                            const from = new Date();
+                            from.setDate(now.getDate() - 30);
+                            newFilter = {
+                              ...item,
+                              dateRange: { from, to: now },
+                              datePreset: '30days'
+                            };
+                          } else {
+                            newFilter = item;
+                          }
+
+                          // Add to applied filters and remove from available
+                          setAppliedFilterCriteria([...appliedFilterCriteria, newFilter]);
+                          setNonAppliedFilterCriteria(
+                            nonAppliedFilterCriteria.filter((c) => c.id !== item.id)
+                          );
+
+                          // Automatically expand the newly added filter
+                          setExpandedFilterId(newFilter.id);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={item.icon as any}
+                          size={20}
+                          color={Colors.gray}
+                        />
+                        <Text style={[styles.sortCriteriaText, { color: Colors.gray }]}>
+                          {item.label}
+                        </Text>
+                        <Ionicons
+                          name="add-circle"
+                          size={20}
+                          color={Colors.gray}
+                          style={styles.addIcon}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {nonAppliedFilterCriteria.length === 0 && (
+                    <View style={styles.emptySection}>
+                      <Text style={styles.emptySectionText}>
+                        All filter types are in use
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
-            </GestureHandlerRootView>
+            </ScrollView>
           )}
 
           {/* Bottom Actions */}
@@ -1493,5 +1760,259 @@ const styles = StyleSheet.create({
   },
   actionMenuButtonTextDanger: {
     color: Colors.error,
+  },
+  filterDescription: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    marginTop: 2,
+  },
+  addIcon: {
+    marginLeft: 'auto',
+  },
+  // Filter Configuration Modal Styles
+  filterConfigContent: {
+    padding: Spacing.screenPadding.horizontal,
+    paddingTop: Spacing.gap.section,
+    paddingBottom: 40,
+  },
+  filterConfigTitle: {
+    fontSize: Typography.fontSize.h2,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.small,
+  },
+  filterConfigSubtitle: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    marginBottom: Spacing.gap.large,
+  },
+  filterConfigHelper: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    marginTop: Spacing.gap.medium,
+    fontStyle: 'italic',
+  },
+  ratingInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.large,
+    marginTop: Spacing.gap.medium,
+  },
+  ratingInputContainer: {
+    flex: 1,
+  },
+  ratingInputLabel: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.xs,
+  },
+  ratingInput: {
+    height: 50,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.large,
+    paddingHorizontal: Spacing.padding.card,
+    fontSize: Typography.fontSize.large,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+  },
+  ratingRangeSeparator: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+    marginTop: 20,
+  },
+  datePresetContainer: {
+    gap: Spacing.gap.small,
+    marginTop: Spacing.gap.medium,
+  },
+  datePresetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.gap.medium,
+    paddingHorizontal: Spacing.gap.large,
+  },
+  datePresetButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.black,
+  },
+  datePresetButtonText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+  },
+  datePresetButtonTextActive: {
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  // Inline Filter Configuration Styles
+  filterCard: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.small,
+  },
+  expandButton: {
+    padding: Spacing.gap.xs,
+    marginLeft: Spacing.gap.xs,
+  },
+  filterDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.gap.medium,
+    marginHorizontal: -Spacing.padding.card,
+    alignSelf: 'stretch',
+  },
+  filterConfigInlineContent: {
+    paddingTop: Spacing.gap.medium,
+    paddingHorizontal: 0,
+    width: '100%',
+  },
+  inlineConfigContent: {
+    gap: Spacing.gap.medium,
+    width: '100%',
+  },
+  inlineConfigLabel: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+  },
+  modeButtonsRow: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
+    flexWrap: 'wrap',
+  },
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.gap.xs,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.gap.small,
+    paddingHorizontal: Spacing.gap.medium,
+  },
+  modeButtonActive: {
+    backgroundColor: Colors.primaryActive,
+    borderColor: Colors.black,
+  },
+  modeButtonText: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+  },
+  modeButtonTextActive: {
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  ratingInputsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.gap.medium,
+    width: '100%',
+  },
+  inlineInputLabel: {
+    fontSize: Typography.fontSize.small,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.text.primary,
+    marginBottom: Spacing.gap.xs,
+  },
+  inlineInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: 50,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.form.inputPadding,
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+  },
+  inlineInputText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+    textAlign: 'left',
+  },
+  inlineInputPlaceholder: {
+    color: Colors.gray,
+  },
+  dateRangeRow: {
+    flexDirection: 'row',
+    gap: Spacing.gap.medium,
+  },
+  dateFieldContainer: {
+    flex: 1,
+    minHeight: 70,
+  },
+  datePickerButton: {
+    minHeight: 45,
+    height: 45,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.gap.medium,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerButtonText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+    textAlign: 'center',
+  },
+  datePickerContainer: {
+    marginTop: Spacing.gap.medium,
+  },
+  datePickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.gap.medium,
+    paddingTop: Spacing.gap.medium,
+    marginTop: Spacing.gap.medium,
+  },
+  datePickerActionButton: {
+    flex: 1,
+    paddingVertical: Spacing.gap.small,
+    paddingHorizontal: Spacing.gap.large,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerConfirmButton: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.border,
+  },
+  datePickerCancelText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_400Regular',
+    color: Colors.gray,
+  },
+  datePickerConfirmText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
   },
 });

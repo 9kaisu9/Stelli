@@ -141,35 +141,41 @@ function AnimatedFieldCard({
         // Expanded state - show all fields with animation
         <>
           <View style={styles.fieldHeader}>
-            <Text style={styles.fieldLabel}>Field Name</Text>
+            <Text style={styles.fieldCollapsibleHeaderText}>
+              {fieldDisplayName}
+            </Text>
             <View style={styles.fieldHeaderActions}>
-              <TouchableOpacity
-                onPress={onRemove}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="trash-outline" size={20} color={Colors.text.primary} />
-              </TouchableOpacity>
               <TouchableOpacity
                 onPress={onToggle}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.expandButton}
               >
                 <Ionicons
                   name="chevron-up"
-                  size={24}
-                  color={Colors.text.primary}
+                  size={20}
+                  color={Colors.black}
                 />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onRemove}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.removeButton}
+              >
+                <Ionicons name="close-circle" size={20} color={Colors.gray} />
               </TouchableOpacity>
             </View>
           </View>
 
           <Animated.View style={animatedContentStyle}>
-            <View style={styles.fieldInputBlock}>
-              <TextInput
-                value={field.name}
-                onChangeText={(text) => onFieldChange(field.id, { name: text })}
-                placeholder="e.g., Location, Genre, Price"
-              />
-            </View>
+            <View style={styles.fieldConfigExpanded}>
+              <View style={styles.fieldInputBlock}>
+                <Text style={styles.fieldLabel}>Field Name</Text>
+                <TextInput
+                  value={field.name}
+                  onChangeText={(text) => onFieldChange(field.id, { name: text })}
+                  placeholder="e.g., Location, Genre, Price"
+                />
+              </View>
 
             <View style={styles.fieldTypeRow}>
               <Text style={styles.fieldLabel}>Type</Text>
@@ -266,6 +272,7 @@ function AnimatedFieldCard({
               />
               <Text style={styles.checkboxLabel}>Required field</Text>
             </TouchableOpacity>
+            </View>
           </Animated.View>
         </>
       )}
@@ -963,9 +970,8 @@ const styles = StyleSheet.create({
   },
   fieldHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.form.labelGap,
+    gap: Spacing.gap.small,
   },
   fieldLabel: {
     fontSize: Typography.fontSize.medium,
@@ -1196,5 +1202,26 @@ const styles = StyleSheet.create({
   },
   iconPickerContainer: {
     width: 80,
+  },
+  expandButton: {
+    padding: Spacing.gap.xs,
+    marginLeft: Spacing.gap.xs,
+  },
+  removeButton: {
+    padding: Spacing.gap.xs,
+  },
+  fieldConfigExpanded: {
+    paddingTop: Spacing.gap.medium,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    marginTop: Spacing.gap.medium,
+    marginHorizontal: -Spacing.padding.card,
+    paddingHorizontal: Spacing.padding.card,
+  },
+  fieldCollapsibleHeaderText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+    flex: 1,
   },
 });
