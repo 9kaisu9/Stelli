@@ -56,14 +56,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
+        setLoading(false);
+      })
+      .catch(async (error) => {
+        console.error('Error getting session:', error);
+        // If there's an error getting the session (e.g., corrupted session data),
+        // clear the session and continue
+        try {
+          await supabase.auth.signOut();
+        } catch (signOutError) {
+          console.error('Error signing out after session error:', signOutError);
+        }
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const {

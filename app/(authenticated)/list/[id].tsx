@@ -21,6 +21,7 @@ import { useListDetail, useListEntries } from '@/lib/hooks/useListEntries';
 import { useListActions } from '@/lib/hooks/useListActions';
 import { useShareList } from '@/lib/hooks/useShareList';
 import { useListPermissions } from '@/lib/hooks/useListPermissions';
+import { useEntryActions } from '@/lib/hooks/useEntryActions';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius, Dimensions } from '@/constants/styleGuide';
 import Card from '@/components/Card';
 import EntryCard from '@/components/EntryCard';
@@ -102,6 +103,7 @@ export default function ListDetailScreen() {
   const { data: list, isLoading: listLoading, error: listError } = useListDetail(id);
   const { data: entries, isLoading: entriesLoading, error: entriesError } = useListEntries(id);
   const { deleteListMutation } = useListActions();
+  const { deleteEntryMutation } = useEntryActions();
   const { generateShareUrl } = useShareList(id);
   const { data: permission, isLoading: permissionLoading } = useListPermissions(id);
 
@@ -147,9 +149,17 @@ export default function ListDetailScreen() {
   const handleConfirmDeleteEntry = async () => {
     if (!selectedEntry) return;
 
-    // TODO: Implement delete entry mutation
-    trackEvent('Entry Deleted', { entryId: selectedEntry.id, listId: id });
-    setShowSuccessSheet(true);
+    deleteEntryMutation.mutate(selectedEntry.id, {
+      onSuccess: () => {
+        trackEvent('Entry Deleted', { entryId: selectedEntry.id, listId: id });
+        setShowSuccessSheet(true);
+        setSelectedEntry(null);
+      },
+      onError: (error: any) => {
+        setErrorMessage(error.message || 'Failed to delete entry');
+        setShowErrorSheet(true);
+      },
+    });
   };
 
   const handleEditList = () => {
@@ -228,6 +238,58 @@ export default function ListDetailScreen() {
 
   const isLoading = listLoading || entriesLoading;
   const error = listError || entriesError;
+
+  // Sort entries based on applied sort criteria
+  const sortedEntries = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
+
+    // Create a copy to avoid mutating original data
+    const entriesCopy = [...entries];
+
+    // Sort by each criteria in order (highest priority first)
+    entriesCopy.sort((a, b) => {
+      for (const criteria of appliedSortCriteria) {
+        let comparison = 0;
+
+        switch (criteria.key) {
+          case 'date':
+            const dateA = new Date(a.created_at).getTime();
+            const dateB = new Date(b.created_at).getTime();
+            comparison = dateA - dateB;
+            break;
+
+          case 'rating':
+            const ratingA = a.rating ?? -1; // Treat null as lowest
+            const ratingB = b.rating ?? -1;
+            comparison = ratingA - ratingB;
+            break;
+
+          case 'name':
+            const nameA = (a.field_values?.name || a.field_values?.['1'] || '').toLowerCase();
+            const nameB = (b.field_values?.name || b.field_values?.['1'] || '').toLowerCase();
+            comparison = nameA.localeCompare(nameB);
+            break;
+        }
+
+        // Apply direction (asc or desc)
+        if (criteria.direction === 'desc') {
+          comparison = -comparison;
+        }
+
+        // If this criteria produces a difference, return it
+        if (comparison !== 0) {
+          return comparison;
+        }
+
+        // Otherwise, continue to next criteria
+      }
+
+      // If all criteria are equal, maintain original order
+      return 0;
+    });
+
+    return entriesCopy;
+  }, [entries, appliedSortCriteria]);
 
   // Loading state
   if (isLoading) {

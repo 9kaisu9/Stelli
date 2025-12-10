@@ -70,6 +70,7 @@ export function useEntryActions() {
       queryClient.invalidateQueries({ queryKey: ['listEntries'] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['allEntries'] });
     },
   });
 

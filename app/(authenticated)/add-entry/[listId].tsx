@@ -64,6 +64,21 @@ export default function AddEntryScreen() {
       return false;
     }
 
+    // Validate rating bounds based on rating type
+    if (rating !== null && rating !== undefined) {
+      const ratingConfig = list.rating_config || { max: 5, step: 0.5 };
+      if (list.rating_type === 'stars') {
+        // Stars: 0.5 to 5 in increments of 0.5
+        if (rating < 0.5 || rating > 5) return false;
+      } else if (list.rating_type === 'points') {
+        // Points: 1 to 100 in increments of 1
+        if (rating < 1 || rating > 100 || rating % 1 !== 0) return false;
+      } else if (list.rating_type === 'scale') {
+        // Scale: 1 to 10 in increments of 1
+        if (rating < 1 || rating > 10 || rating % 1 !== 0) return false;
+      }
+    }
+
     // Check required custom fields (exclude the Name field with id '1')
     for (const field of list.field_definitions || []) {
       if (field.id !== '1' && field.required) {

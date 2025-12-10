@@ -60,6 +60,13 @@ export default function AuthenticatedLayout() {
         }}
       />
       <Stack.Screen
+        name="edit-list/[id]"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
         name="profile"
         options={{
           // Full-page push with a slide-in-from-right transition
