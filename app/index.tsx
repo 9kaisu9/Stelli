@@ -8,12 +8,12 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import TextInput from '@/components/TextInput';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { signIn } from '@/lib/utils/auth';
 import { loginSchema, LoginFormData } from '@/lib/validation/auth';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -27,6 +27,10 @@ export default function WelcomeScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showComingSoonSheet, setShowComingSoonSheet] = useState(false);
+  const [comingSoonMessage, setComingSoonMessage] = useState('');
 
   // Field blur handlers for progressive validation
   const handleEmailBlur = () => {
@@ -83,7 +87,8 @@ export default function WelcomeScreen() {
       // AuthContext will handle navigation via auth state change
       router.replace('/(authenticated)/home');
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message);
+      setErrorMessage(error.message || 'Failed to sign in');
+      setShowErrorSheet(true);
     } finally {
       setLoading(false);
     }
@@ -149,7 +154,8 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             style={styles.forgotPassword}
             onPress={() => {
-              Alert.alert('Coming Soon', 'Password reset functionality will be added soon');
+              setComingSoonMessage('Password reset functionality will be added soon');
+              setShowComingSoonSheet(true);
             }}
           >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -177,7 +183,8 @@ export default function WelcomeScreen() {
               label="Google"
               variant="secondary"
               onPress={() => {
-                Alert.alert('Coming Soon', 'Google sign-in will be added in a future update');
+                setComingSoonMessage('Google sign-in will be added in a future update');
+                setShowComingSoonSheet(true);
               }}
               disabled={loading}
               fullWidth
@@ -186,7 +193,8 @@ export default function WelcomeScreen() {
               label="Apple"
               variant="secondary"
               onPress={() => {
-                Alert.alert('Coming Soon', 'Apple sign-in will be added in a future update');
+                setComingSoonMessage('Apple sign-in will be added in a future update');
+                setShowComingSoonSheet(true);
               }}
               disabled={loading}
               fullWidth
@@ -202,6 +210,34 @@ export default function WelcomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Error Sheet */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Login Failed'}
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
+
+      {/* Coming Soon Sheet */}
+      <CustomActionSheet
+        visible={showComingSoonSheet}
+        onClose={() => setShowComingSoonSheet(false)}
+        title={comingSoonMessage || 'Coming Soon'}
+        options={[
+          {
+            label: 'OK',
+            icon: 'information-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
     </KeyboardAvoidingView>
   );
 }

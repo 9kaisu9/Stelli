@@ -77,8 +77,8 @@ export default function HomeScreen() {
     }
   }, [listsError]);
 
-  // TEMP: Allow unlimited lists for testing (remove this line later)
-  const canCreateList = true; // profile?.subscription_tier === 'premium' || (lists?.length || 0) < 1;
+  // Check if user can create more lists (premium = unlimited, free = max 1)
+  const canCreateList = profile?.subscription_tier === 'premium' || (lists?.length || 0) < 1;
 
   const isLoading = listsLoading || entriesLoading;
   const error = listsError;

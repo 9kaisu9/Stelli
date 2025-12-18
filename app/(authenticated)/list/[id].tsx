@@ -99,6 +99,8 @@ export default function ListDetailScreen() {
   const [activeDateField, setActiveDateField] = useState<'from' | 'to' | null>(null);
   const [tempFromDate, setTempFromDate] = useState<Date | null>(null);
   const [tempToDate, setTempToDate] = useState<Date | null>(null);
+  // Temp rating input values (for allowing empty during editing)
+  const [tempRatingInputs, setTempRatingInputs] = useState<Record<string, { min: string; max: string }>>({});
 
   // Applied sort criteria (order matters - first has highest priority)
   const [appliedSortCriteria, setAppliedSortCriteria] = useState<SortCriteria[]>([
@@ -892,56 +894,129 @@ export default function ListDetailScreen() {
                                   </View>
 
                                   {/* Rating Inputs */}
-                                  {item.ratingFilterMode !== 'unrated' && (
-                                    <View style={styles.ratingInputsRow}>
-                                      {(item.ratingFilterMode === 'above' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
-                                        <View style={{ flex: 1 }}>
-                                          <Text style={styles.inlineInputLabel}>
-                                            {item.ratingFilterMode === 'above' ? 'Above' : 'Min'}
-                                          </Text>
-                                          <TextInput
-                                            style={styles.inlineInput}
-                                            value={item.ratingRange?.min.toString() || '0'}
-                                            onChangeText={(text) => {
-                                              const num = parseFloat(text);
-                                              if (!isNaN(num)) {
-                                                const updated = appliedFilterCriteria.map(f =>
-                                                  f.id === item.id
-                                                    ? { ...f, ratingRange: { ...f.ratingRange, min: num, max: f.ratingRange?.max || 5 } }
-                                                    : f
-                                                );
-                                                setAppliedFilterCriteria(updated);
-                                              }
-                                            }}
-                                            keyboardType="numeric"
-                                          />
-                                        </View>
-                                      )}
-                                      {(item.ratingFilterMode === 'below' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
-                                        <View style={{ flex: 1 }}>
-                                          <Text style={styles.inlineInputLabel}>
-                                            {item.ratingFilterMode === 'below' ? 'Below' : 'Max'}
-                                          </Text>
-                                          <TextInput
-                                            style={styles.inlineInput}
-                                            value={item.ratingRange?.max.toString() || '5'}
-                                            onChangeText={(text) => {
-                                              const num = parseFloat(text);
-                                              if (!isNaN(num)) {
-                                                const updated = appliedFilterCriteria.map(f =>
-                                                  f.id === item.id
-                                                    ? { ...f, ratingRange: { min: f.ratingRange?.min || 0, max: num } }
-                                                    : f
-                                                );
-                                                setAppliedFilterCriteria(updated);
-                                              }
-                                            }}
-                                            keyboardType="numeric"
-                                          />
-                                        </View>
-                                      )}
-                                    </View>
-                                  )}
+                                  {item.ratingFilterMode !== 'unrated' && (() => {
+                                    // Determine valid range based on list rating type
+                                    const ratingMax = list?.rating_type === 'stars' ? 5 : list?.rating_type === 'scale' ? 10 : 100;
+                                    const ratingMin = list?.rating_type === 'stars' ? 0 : 1;
+                                    const step = list?.rating_type === 'stars' ? 0.5 : list?.rating_type === 'scale' ? 1 : 1;
+
+                                    // Get temp value or fall back to actual value
+                                    const tempMin = tempRatingInputs[item.id]?.min ?? item.ratingRange?.min?.toString() ?? ratingMin.toString();
+                                    const tempMax = tempRatingInputs[item.id]?.max ?? item.ratingRange?.max?.toString() ?? ratingMax.toString();
+
+                                    return (
+                                      <View style={styles.ratingInputsRow}>
+                                        {(item.ratingFilterMode === 'above' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={styles.inlineInputLabel}>
+                                              {item.ratingFilterMode === 'above' ? 'Above' : 'Min'}
+                                            </Text>
+                                            <TextInput
+                                              style={styles.inlineInput}
+                                              value={tempMin}
+                                              onChangeText={(text) => {
+                                                // Update temp input state to allow empty string
+                                                setTempRatingInputs(prev => ({
+                                                  ...prev,
+                                                  [item.id]: { ...prev[item.id], min: text }
+                                                }));
+                                              }}
+                                              onBlur={() => {
+                                                const num = parseFloat(tempMin);
+                                                if (!isNaN(num) && num !== item.ratingRange?.min) {
+                                                  // Clamp to valid range
+                                                  let clampedMin = Math.max(ratingMin, Math.min(ratingMax, num));
+
+                                                  const updated = appliedFilterCriteria.map(f => {
+                                                    if (f.id === item.id) {
+                                                      const currentMax = f.ratingRange?.max || ratingMax;
+                                                      // Only enforce min < max for 'between' mode, not for 'above'
+                                                      if (item.ratingFilterMode === 'between' && clampedMin >= currentMax) {
+                                                        clampedMin = currentMax - step;
+                                                      }
+                                                      return {
+                                                        ...f,
+                                                        ratingRange: {
+                                                          min: clampedMin,
+                                                          max: currentMax
+                                                        }
+                                                      };
+                                                    }
+                                                    return f;
+                                                  });
+                                                  setAppliedFilterCriteria(updated);
+                                                }
+                                                // Clear temp input for this field
+                                                setTempRatingInputs(prev => {
+                                                  const newInputs = { ...prev };
+                                                  if (newInputs[item.id]) {
+                                                    delete newInputs[item.id].min;
+                                                  }
+                                                  return newInputs;
+                                                });
+                                              }}
+                                              keyboardType="numeric"
+                                              placeholder={`${ratingMin} - ${ratingMax}`}
+                                            />
+                                          </View>
+                                        )}
+                                        {(item.ratingFilterMode === 'below' || item.ratingFilterMode === 'between' || !item.ratingFilterMode) && (
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={styles.inlineInputLabel}>
+                                              {item.ratingFilterMode === 'below' ? 'Below' : 'Max'}
+                                            </Text>
+                                            <TextInput
+                                              style={styles.inlineInput}
+                                              value={tempMax}
+                                              onChangeText={(text) => {
+                                                // Update temp input state to allow empty string
+                                                setTempRatingInputs(prev => ({
+                                                  ...prev,
+                                                  [item.id]: { ...prev[item.id], max: text }
+                                                }));
+                                              }}
+                                              onBlur={() => {
+                                                const num = parseFloat(tempMax);
+                                                if (!isNaN(num) && num !== item.ratingRange?.max) {
+                                                  // Clamp to valid range
+                                                  let clampedMax = Math.max(ratingMin, Math.min(ratingMax, num));
+
+                                                  const updated = appliedFilterCriteria.map(f => {
+                                                    if (f.id === item.id) {
+                                                      const currentMin = f.ratingRange?.min || ratingMin;
+                                                      // Only enforce min < max for 'between' mode, not for 'below'
+                                                      if (item.ratingFilterMode === 'between' && clampedMax <= currentMin) {
+                                                        clampedMax = currentMin + step;
+                                                      }
+                                                      return {
+                                                        ...f,
+                                                        ratingRange: {
+                                                          min: currentMin,
+                                                          max: clampedMax
+                                                        }
+                                                      };
+                                                    }
+                                                    return f;
+                                                  });
+                                                  setAppliedFilterCriteria(updated);
+                                                }
+                                                // Clear temp input for this field
+                                                setTempRatingInputs(prev => {
+                                                  const newInputs = { ...prev };
+                                                  if (newInputs[item.id]) {
+                                                    delete newInputs[item.id].max;
+                                                  }
+                                                  return newInputs;
+                                                });
+                                              }}
+                                              keyboardType="numeric"
+                                              placeholder={`${ratingMin} - ${ratingMax}`}
+                                            />
+                                          </View>
+                                        )}
+                                      </View>
+                                    );
+                                  })()}
                                 </View>
                               )}
 
@@ -1006,6 +1081,7 @@ export default function ListDetailScreen() {
                                         }
                                         mode="date"
                                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        textColor={Colors.black}
                                         onChange={(event, selectedDate) => {
                                           if (selectedDate) {
                                             if (activeDateField === 'from') {

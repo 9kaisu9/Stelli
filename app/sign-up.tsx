@@ -7,12 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import TextInput from '@/components/TextInput';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { signUp } from '@/lib/utils/auth';
 import { signUpSchema, SignUpFormData } from '@/lib/validation/auth';
 
@@ -26,6 +26,9 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Field blur handlers for progressive validation
   const validateField = (field: keyof SignUpFormData, value: string) => {
@@ -72,20 +75,10 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       await signUp(email, password, displayName);
-
-      // Show success message
-      Alert.alert(
-        'Account Created',
-        'Your account has been created successfully! You can now sign in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/'), // Navigate to login
-          },
-        ]
-      );
+      setShowSuccessSheet(true);
     } catch (error: any) {
-      Alert.alert('Sign Up Failed', error.message);
+      setErrorMessage(error.message || 'Failed to create account');
+      setShowErrorSheet(true);
     } finally {
       setLoading(false);
     }
@@ -197,6 +190,37 @@ export default function SignUpScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Success Sheet */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title="Account Created\n\nYour account has been created successfully! You can now sign in."
+        options={[
+          {
+            label: 'OK',
+            icon: 'checkmark-circle-outline',
+            onPress: () => {
+              setShowSuccessSheet(false);
+              router.replace('/');
+            },
+          },
+        ]}
+      />
+
+      {/* Error Sheet */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Sign Up Failed'}
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
     </KeyboardAvoidingView>
   );
 }

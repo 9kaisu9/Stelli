@@ -4,11 +4,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -18,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { Colors, Typography, Spacing, CommonStyles, BorderRadius } from '@/constants/styleGuide';
 import Button from '@/components/Button';
 import EntryCard from '@/components/EntryCard';
+import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function SharedListScreen() {
@@ -25,6 +25,11 @@ export default function SharedListScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [showSubscribeSheet, setShowSubscribeSheet] = useState(false);
+  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
+  const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successListId, setSuccessListId] = useState<string | null>(null);
 
   const { data: sharedListData, isLoading, error } = useSharedList(token);
 
@@ -92,24 +97,13 @@ export default function SharedListScreen() {
       });
       queryClient.invalidateQueries({ queryKey: ['subscribedLists'] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        'Subscribed!',
-        'This list is now in your "Imported" tab. You can view all entries anytime.',
-        [
-          {
-            text: 'View List',
-            onPress: () => router.replace(`/list/${listId}` as any),
-          },
-          {
-            text: 'Go to Home',
-            onPress: () => router.replace('/home' as any),
-          },
-        ]
-      );
+      setSuccessListId(listId);
+      setShowSuccessSheet(true);
     },
     onError: (error: any) => {
       console.error('Error subscribing to list:', error);
-      Alert.alert('Error', error.message || 'Failed to subscribe to list');
+      setErrorMessage(error.message || 'Failed to subscribe to list');
+      setShowErrorSheet(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
@@ -121,23 +115,7 @@ export default function SharedListScreen() {
 
   const handleSubscribe = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    const isViewOnly = sharedListData?.permission_type === 'view';
-    const message = isViewOnly
-      ? 'This list will be bookmarked in your "Imported" tab for quick access. You can view all entries, but cannot edit or add to this list.'
-      : 'This list will be bookmarked in your "Imported" tab for quick access. You can view and edit all entries.';
-
-    Alert.alert(
-      'Subscribe to List',
-      message,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Subscribe',
-          onPress: () => subscribeToListMutation.mutate(),
-        },
-      ]
-    );
+    setShowSubscribeSheet(true);
   };
 
   const handleSignIn = () => {
@@ -275,6 +253,68 @@ export default function SharedListScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Subscribe Confirmation Sheet */}
+      <CustomActionSheet
+        visible={showSubscribeSheet}
+        onClose={() => setShowSubscribeSheet(false)}
+        title={
+          sharedListData?.permission_type === 'view'
+            ? 'This list will be bookmarked in your "Imported" tab for quick access. You can view all entries, but cannot edit or add to this list.'
+            : 'This list will be bookmarked in your "Imported" tab for quick access. You can view and edit all entries.'
+        }
+        options={[
+          {
+            label: 'Subscribe',
+            icon: 'checkmark-circle-outline',
+            onPress: () => {
+              setShowSubscribeSheet(false);
+              subscribeToListMutation.mutate();
+            },
+          },
+        ]}
+      />
+
+      {/* Success Sheet */}
+      <CustomActionSheet
+        visible={showSuccessSheet}
+        onClose={() => setShowSuccessSheet(false)}
+        title='Subscribed!\n\nThis list is now in your "Imported" tab. You can view all entries anytime.'
+        options={[
+          {
+            label: 'View List',
+            icon: 'list-outline',
+            onPress: () => {
+              setShowSuccessSheet(false);
+              if (successListId) {
+                router.replace(`/list/${successListId}` as any);
+              }
+            },
+          },
+          {
+            label: 'Go to Home',
+            icon: 'home-outline',
+            onPress: () => {
+              setShowSuccessSheet(false);
+              router.replace('/home' as any);
+            },
+          },
+        ]}
+      />
+
+      {/* Error Sheet */}
+      <CustomActionSheet
+        visible={showErrorSheet}
+        onClose={() => setShowErrorSheet(false)}
+        title={errorMessage || 'Error'}
+        options={[
+          {
+            label: 'OK',
+            icon: 'close-circle-outline',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }
