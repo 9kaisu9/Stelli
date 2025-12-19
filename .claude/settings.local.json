@@ -23,9 +23,20 @@
       "Bash(git remote add:*)",
       "Bash(git push:*)",
       "Bash(dir:*)",
-      "Bash(type \"c:\\Development\\Stelli\\app\\(authenticated)\\list\\[id].tsx\")",
       "Bash(more:*)",
-      "Bash(npx supabase gen types:*)"
+      "Bash(npx supabase gen types:*)",
+      "Bash(powershell:*)",
+      "Bash(npx expo start:*)",
+      "Bash(cat:*)",
+      "Bash(npx supabase:*)",
+      "Bash(node scripts/create-storage-bucket.js:*)",
+      "Bash(node scripts/apply-storage-policies.js:*)",
+      "Bash(node scripts/create-storage-rls-policies.js:*)",
+      "Bash(node scripts/apply-storage-rls.js:*)",
+      "Bash(node scripts/apply-policies-via-api.js:*)",
+      "Bash(where:*)",
+      "Bash(node scripts/execute-sql-direct.js:*)",
+      "Bash(npx @modelcontextprotocol/cli:*)"
     ],
     "deny": [],
     "ask": []

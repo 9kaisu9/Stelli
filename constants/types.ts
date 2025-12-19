@@ -18,7 +18,7 @@ export interface Profile {
 }
 
 // Field Types
-export type FieldType = 'text' | 'number' | 'date' | 'dropdown' | 'multi-select' | 'yes-no' | 'rating';
+export type FieldType = 'text' | 'number' | 'date' | 'dropdown' | 'multi-select' | 'yes-no' | 'rating' | 'photos';
 
 export interface FieldDefinition {
   id: string;

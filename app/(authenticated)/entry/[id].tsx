@@ -6,6 +6,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+
+function deepEqual(obj1: any, obj2: any): boolean {
+  if (obj1 === obj2) return true;
+
+  if (obj1 && typeof obj1 === 'object' && obj2 && typeof obj2 === 'object') {
+    if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
+
+    for (const key in obj1) {
+      if (Object.prototype.hasOwnProperty.call(obj1, key)) {
+        if (!Object.prototype.hasOwnProperty.call(obj2, key)) return false;
+        if (!deepEqual(obj1[key], obj2[key])) return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +37,7 @@ import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
 import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
+import PhotoModal from '@/components/PhotoModal';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function EntryDetailScreen() {
@@ -32,6 +50,19 @@ export default function EntryDetailScreen() {
   const [showErrorSheet, setShowErrorSheet] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedPhotoUri, setSelectedPhotoUri] = useState<string | null>(null);
+
+  const handlePhotoPress = (uri: string) => {
+    console.log('🖼️ Entry screen: Photo press handler called with uri:', uri);
+    setSelectedPhotoUri(uri);
+    console.log('🖼️ Entry screen: selectedPhotoUri state updated to:', uri);
+  };
+
+  useEffect(() => {
+    if (selectedPhotoUri) {
+      console.log('🖼️ Entry screen: selectedPhotoUri changed to:', selectedPhotoUri);
+    }
+  }, [selectedPhotoUri]);
 
   const { data: entry, isLoading: entryLoading, error: entryError } = useEntry(id);
   const { data: list, isLoading: listLoading } = useListDetail(entry?.list_id);
@@ -68,7 +99,7 @@ export default function EntryDetailScreen() {
     }
 
     const ratingChanged = rating !== entry.rating;
-    const fieldsChanged = JSON.stringify(fieldValues) !== JSON.stringify(entry.field_values || {});
+    const fieldsChanged = !deepEqual(fieldValues, entry.field_values || {});
     setHasChanges(ratingChanged || fieldsChanged);
   }, [rating, fieldValues, entry, isEditing]);
 
@@ -105,14 +136,13 @@ export default function EntryDetailScreen() {
     for (const field of list.field_definitions || []) {
       if (field.id !== '1' && field.required) {
         const value = fieldValues[field.id];
-        // For text fields, check if not empty or just whitespace
-        if (field.type === 'text') {
-          if (!value || value.trim() === '') {
-            return false;
-          }
+
+        if (field.type === 'yes-no') {
+          if (value === null || value === undefined) return false;
+        } else if (field.type === 'multi-select') {
+          if (!value || !Array.isArray(value) || value.length === 0) return false;
         } else {
-          // For other field types, just check if value exists
-          if (!value) {
+          if (value === null || value === undefined || String(value).trim() === '') {
             return false;
           }
         }
@@ -161,6 +191,8 @@ export default function EntryDetailScreen() {
           rating,
           field_values: fieldValues,
         },
+        fieldDefinitions: list.field_definitions,
+        userId: user.id,
       });
 
       trackEvent('Entry Updated', { entryId: entry.id, listId: entry.list_id });
@@ -439,6 +471,7 @@ export default function EntryDetailScreen() {
                             value={fieldValues[field.id]}
                             onChange={() => {}}
                             readonly={true}
+                            onPhotoPress={handlePhotoPress}
                           />
                         </View>
                         {index < fieldsWithValues.length - 1 && (
@@ -525,6 +558,15 @@ export default function EntryDetailScreen() {
         title="Delete this entry?\n\nThis action cannot be undone."
         options={deleteOptions}
       />
+
+      {/* Photo Modal */}
+      {selectedPhotoUri && (
+        <PhotoModal
+          visible={!!selectedPhotoUri}
+          photoUri={selectedPhotoUri}
+          onClose={() => setSelectedPhotoUri(null)}
+        />
+      )}
     </View>
   );
 }

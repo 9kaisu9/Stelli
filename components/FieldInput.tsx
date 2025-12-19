@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image, ScrollView } from 'react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -7,15 +7,17 @@ import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuid
 import { FieldDefinition } from '@/constants/types';
 import TextInput from '@/components/TextInput';
 import StarRating from '@/components/StarRating';
+import ImagePicker from '@/components/ImagePicker';
 
 interface FieldInputProps {
   field: FieldDefinition;
   value: any;
   onChange: (value: any) => void;
   readonly?: boolean;
+  onPhotoPress?: (uri: string) => void;
 }
 
-export default function FieldInput({ field, value, onChange, readonly = false }: FieldInputProps) {
+export default function FieldInput({ field, value, onChange, readonly = false, onPhotoPress }: FieldInputProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDateValue, setTempDateValue] = useState<Date | null>(null);
 
@@ -307,9 +309,10 @@ export default function FieldInput({ field, value, onChange, readonly = false }:
   }
 
   // RATING
-  if (field.type === 'rating' && field.ratingConfig) {
-    const max = field.ratingConfig.max || 5;
-    const step = field.ratingConfig.step || 0.5;
+  if (field.type === 'rating') {
+    // Use field's ratingConfig if available, otherwise default to stars (5 max, 0.5 step)
+    const max = field.ratingConfig?.max || 5;
+    const step = field.ratingConfig?.step || 0.5;
 
     if (readonly) {
       // In readonly mode, show star rating for star-based fields
@@ -366,6 +369,55 @@ export default function FieldInput({ field, value, onChange, readonly = false }:
         placeholder={`1-${max}`}
         keyboardType="decimal-pad"
         editable={!readonly}
+      />
+    );
+  }
+
+  // PHOTOS INPUT
+  if (field.type === 'photos') {
+    // Value for photos field is an array of URIs
+    const imageUris = Array.isArray(value) ? value : [];
+
+    if (readonly) {
+      // In readonly mode, only display images, no add/remove functionality
+      if (imageUris.length === 0) {
+        return <Text style={styles.readonlyText}>No photos</Text>;
+      }
+
+      const handlePhotoPress = (uri: string) => {
+        console.log('📸 Photo pressed:', uri);
+        console.log('📸 onPhotoPress handler exists:', !!onPhotoPress);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (onPhotoPress) {
+          console.log('📸 Calling onPhotoPress with uri:', uri);
+          onPhotoPress(uri);
+        } else {
+          console.log('📸 No onPhotoPress handler provided');
+        }
+      };
+
+      return (
+        <ScrollView horizontal contentContainerStyle={styles.imageScrollContainerReadonly} showsHorizontalScrollIndicator={false}>
+          {imageUris.map((uri, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.imageThumbnailContainerReadonly}
+              onPress={() => handlePhotoPress(uri)}
+              activeOpacity={0.7}
+            >
+              <Image source={{ uri }} style={styles.imageThumbnail} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      );
+    }
+
+    return (
+      <ImagePicker
+        selectedImages={imageUris}
+        onSelectImages={onChange}
+        compact
+        onPhotoPress={onPhotoPress}
       />
     );
   }
@@ -506,5 +558,19 @@ const styles = StyleSheet.create({
   yesNoButtonTextActive: {
     color: Colors.black,
     fontFamily: 'Nunito_700Bold',
+  },
+  imageScrollContainerReadonly: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
+  },
+  imageThumbnailContainerReadonly: {
+    // Styles for the container in readonly mode, if different
+  },
+  imageThumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 });

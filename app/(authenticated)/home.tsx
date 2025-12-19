@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal, Pressable, TextInput, Dimensions as RNDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,7 @@ import RecentEntryCard from '@/components/RecentEntryCard';
 import TabSwitcher from '@/components/TabSwitcher';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
+const SCREEN_WIDTH = RNDimensions.get('window').width;
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function HomeScreen() {
@@ -60,6 +61,7 @@ export default function HomeScreen() {
   const [selectedList, setSelectedList] = useState<{ id: string; name: string; isImported?: boolean; permission_type?: 'view' | 'edit' } | null>(null);
   const [shareToken, setShareToken] = useState('');
   const [showListPickerForEntry, setShowListPickerForEntry] = useState(false);
+  const [listPickerContainerWidth, setListPickerContainerWidth] = useState(0);
 
   // Get the appropriate list based on active tab
   const lists = activeTab === 'Mine' ? userLists : importedLists;
@@ -549,11 +551,18 @@ export default function HomeScreen() {
               {userLists && userLists.length > 0 && (
                 <>
                   <Text style={styles.listPickerSectionTitle}>My Lists</Text>
-                  <View style={styles.listPickerListsContainer}>
-                    {userLists.map((list) => (
+                  <View
+                    style={styles.listPickerListsContainer}
+                    onLayout={(event) => {
+                      const { width } = event.nativeEvent.layout;
+                      setListPickerContainerWidth(width);
+                    }}
+                  >
+                    {listPickerContainerWidth > 0 && userLists.map((list) => (
                       <ListCard
                         key={list.id}
                         list={list}
+                        containerWidth={listPickerContainerWidth}
                         onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           setShowListPickerForEntry(false);
@@ -570,11 +579,18 @@ export default function HomeScreen() {
               {importedLists && importedLists.filter(l => l.permission_type === 'edit').length > 0 && (
                 <>
                   <Text style={styles.listPickerSectionTitle}>Imported Lists (Can Edit)</Text>
-                  <View style={styles.listPickerListsContainer}>
-                    {importedLists.filter(l => l.permission_type === 'edit').map((list) => (
+                  <View
+                    style={styles.listPickerListsContainer}
+                    onLayout={(event) => {
+                      const { width } = event.nativeEvent.layout;
+                      setListPickerContainerWidth(width);
+                    }}
+                  >
+                    {listPickerContainerWidth > 0 && importedLists.filter(l => l.permission_type === 'edit').map((list) => (
                       <ListCard
                         key={list.id}
                         list={list}
+                        containerWidth={listPickerContainerWidth}
                         onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           setShowListPickerForEntry(false);
@@ -716,7 +732,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.gap.large,
   },
   listsContainer: {
-    gap: Spacing.gap.small,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.gap.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -857,7 +875,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.gap.small,
   },
   listPickerListsContainer: {
-    gap: Spacing.gap.small,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.gap.medium,
   },
   noListsContainer: {
     alignItems: 'center',

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Entry } from '@/constants/types';
+import { Entry, FieldDefinition } from '@/constants/types';
+import { uploadFile } from '@/lib/utils/uploadFile';
 
 /**
  * Hook to fetch a single entry by ID

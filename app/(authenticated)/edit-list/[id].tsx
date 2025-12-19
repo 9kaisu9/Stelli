@@ -167,7 +167,7 @@ function AnimatedFieldCard({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.fieldTypeScrollContent}
               >
-                {(['text', 'number', 'date', 'dropdown', 'multi-select', 'yes-no', 'rating'] as FieldType[]).map((type) => (
+                {(['text', 'number', 'date', 'dropdown', 'multi-select', 'yes-no', 'rating', 'photos'] as FieldType[]).map((type) => (
                   <TouchableOpacity
                     key={type}
                     style={[
@@ -501,9 +501,22 @@ export default function EditListScreen() {
   };
 
   const handleFieldChange = (id: string, updates: Partial<FieldDefinition>) => {
-    setCustomFields(customFields.map(field =>
-      field.id === id ? { ...field, ...updates } : field
-    ));
+    setCustomFields(customFields.map(field => {
+      if (field.id === id) {
+        const updatedField = { ...field, ...updates };
+
+        // If changing to rating type, automatically set ratingConfig to match the list's rating type
+        if (updates.type === 'rating' && !updatedField.ratingConfig) {
+          updatedField.ratingConfig = {
+            max: ratingType === 'stars' ? 5 : ratingType === 'points' ? 100 : 10,
+            step: ratingType === 'stars' ? 0.5 : 1,
+          };
+        }
+
+        return updatedField;
+      }
+      return field;
+    }));
   };
 
   if (isLoading || !list) {

@@ -19,6 +19,7 @@ import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
 import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
+import PhotoModal from '@/components/PhotoModal';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
 
 export default function AddEntryScreen() {
@@ -34,6 +35,7 @@ export default function AddEntryScreen() {
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
   const [showSuccessSheet, setShowSuccessSheet] = useState(false);
   const [showErrorSheet, setShowErrorSheet] = useState(false);
+  const [selectedPhotoUri, setSelectedPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
     trackScreenView('Add Entry Screen', { listId });
@@ -51,54 +53,93 @@ export default function AddEntryScreen() {
     }));
   };
 
-  const isFormValid = () => {
-    if (!list) return false;
+    const isFormValid = () => {
 
-    // Check name field (always required)
-    if (!fieldValues.name || fieldValues.name.trim() === '') {
-      return false;
-    }
+      if (!list) return false;
 
-    // Check rating (required if rating type is not 'none')
-    if (list.rating_type !== 'none' && (rating === null || rating === undefined || rating === 0)) {
-      return false;
-    }
+  
 
-    // Validate rating bounds based on rating type
-    if (rating !== null && rating !== undefined) {
-      const ratingConfig = list.rating_config || { max: 5, step: 0.5 };
-      if (list.rating_type === 'stars') {
-        // Stars: 0.5 to 5 in increments of 0.5
-        if (rating < 0.5 || rating > 5) return false;
-      } else if (list.rating_type === 'points') {
-        // Points: 1 to 100 in increments of 1
-        if (rating < 1 || rating > 100 || rating % 1 !== 0) return false;
-      } else if (list.rating_type === 'scale') {
-        // Scale: 1 to 10 in increments of 1
-        if (rating < 1 || rating > 10 || rating % 1 !== 0) return false;
+      // Check name field (always required)
+
+      if (!fieldValues.name || fieldValues.name.trim() === '') {
+
+        return false;
+
       }
-    }
 
-    // Check required custom fields (exclude the Name field with id '1')
-    for (const field of list.field_definitions || []) {
-      if (field.id !== '1' && field.required) {
-        const value = fieldValues[field.id];
-        // For text fields, check if not empty or just whitespace
-        if (field.type === 'text') {
-          if (!value || value.trim() === '') {
-            return false;
-          }
-        } else {
-          // For other field types, just check if value exists
-          if (!value) {
-            return false;
-          }
+  
+
+      // Check rating (required if rating type is not 'none')
+
+      if (list.rating_type !== 'none' && (rating === null || rating === undefined || rating === 0)) {
+
+        return false;
+
+      }
+
+  
+
+      // Validate rating bounds based on rating type
+
+      if (rating !== null && rating !== undefined) {
+
+        if (list.rating_type === 'stars') {
+
+          if (rating < 0.5 || rating > 5) return false;
+
+        } else if (list.rating_type === 'points') {
+
+          if (rating < 1 || rating > 100 || rating % 1 !== 0) return false;
+
+        } else if (list.rating_type === 'scale') {
+
+          const max = list.rating_config?.max || 10;
+
+          if (rating < 1 || rating > max || rating % 1 !== 0) return false;
+
         }
-      }
-    }
 
-    return true;
-  };
+      }
+
+  
+
+      // Check required custom fields
+
+      for (const field of list.field_definitions || []) {
+
+        if (field.id !== '1' && field.required) {
+
+          const value = fieldValues[field.id];
+
+  
+
+          if (field.type === 'yes-no') {
+
+            if (value === null || value === undefined) return false;
+
+          } else if (field.type === 'multi-select') {
+
+            if (!value || !Array.isArray(value) || value.length === 0) return false;
+
+          } else {
+
+            if (value === null || value === undefined || String(value).trim() === '') {
+
+              return false;
+
+            }
+
+          }
+
+        }
+
+      }
+
+  
+
+      return true;
+
+    };
 
   const handleSave = async () => {
     if (!list || !user) return;
@@ -111,6 +152,7 @@ export default function AddEntryScreen() {
         user_id: user.id,
         rating,
         field_values: fieldValues,
+        fieldDefinitions: list.field_definitions,
       });
 
       trackEvent('Entry Created', { listId, entryName: fieldValues['1'] });
@@ -191,11 +233,16 @@ export default function AddEntryScreen() {
               <TextInput
                 value={rating?.toString() || ''}
                 onChangeText={(text) => {
-                  const num = parseFloat(text);
+                  const num = parseInt(text, 10);
                   setRating(isNaN(num) ? null : num);
                 }}
-                placeholder="Enter points"
-                keyboardType="numeric"
+                onBlur={() => {
+                  if (rating === null || rating === undefined) return;
+                  const clamped = Math.max(1, Math.min(100, Math.round(rating)));
+                  setRating(clamped);
+                }}
+                placeholder="1-100"
+                keyboardType="number-pad"
               />
             )}
             {list.rating_type === 'scale' && (
@@ -205,8 +252,14 @@ export default function AddEntryScreen() {
                   const num = parseFloat(text);
                   setRating(isNaN(num) ? null : num);
                 }}
-                placeholder={`1-${list.rating_config.max}`}
-                keyboardType="numeric"
+                onBlur={() => {
+                  if (rating === null || rating === undefined) return;
+                  const max = list.rating_config?.max || 10;
+                  const clamped = Math.max(1, Math.min(max, Math.round(rating)));
+                  setRating(clamped);
+                }}
+                placeholder={`1-${list.rating_config?.max || 10}`}
+                keyboardType="number-pad"
               />
             )}
           </View>
@@ -226,6 +279,7 @@ export default function AddEntryScreen() {
                 field={field}
                 value={fieldValues[field.id]}
                 onChange={(value) => handleFieldChange(field.id, value)}
+                onPhotoPress={setSelectedPhotoUri}
               />
             </View>
           ))}
@@ -269,6 +323,15 @@ export default function AddEntryScreen() {
           },
         ]}
       />
+
+      {/* Photo Modal */}
+      {selectedPhotoUri && (
+        <PhotoModal
+          visible={!!selectedPhotoUri}
+          photoUri={selectedPhotoUri}
+          onClose={() => setSelectedPhotoUri(null)}
+        />
+      )}
     </View>
   );
 }
