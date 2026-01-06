@@ -522,6 +522,24 @@ export default function ListDetailScreen() {
 
   return (
     <View style={CommonStyles.screenContainer}>
+      {/* Floating Action Buttons */}
+      <View style={styles.floatingButtons}>
+        <TouchableOpacity onPress={handleBack} style={styles.floatingButton}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+        </TouchableOpacity>
+        <View style={styles.headerRightButtons}>
+          <TouchableOpacity onPress={handleOpenSortFilterModal} style={styles.floatingButton}>
+            <Ionicons name="funnel-outline" size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
+          {/* Only show action menu for list owners */}
+          {isOwner && (
+            <TouchableOpacity onPress={handleMoreOptions} style={styles.floatingButton}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -533,24 +551,6 @@ export default function ListDetailScreen() {
           />
         }
       >
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
-          <View style={styles.headerRightButtons}>
-            <TouchableOpacity onPress={handleOpenSortFilterModal} style={styles.headerButton}>
-              <Ionicons name="funnel-outline" size={24} color={Colors.text.primary} />
-            </TouchableOpacity>
-            {/* Only show action menu for list owners */}
-            {isOwner && (
-              <TouchableOpacity onPress={handleMoreOptions} style={styles.headerButton}>
-                <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
         {/* List Title */}
         <View style={styles.titleSection}>
           <Text style={styles.listName}>{list.name}</Text>
@@ -1374,20 +1374,20 @@ export default function ListDetailScreen() {
 const styles = StyleSheet.create({
   content: {
     padding: Spacing.screenPadding.horizontal,
-    paddingTop: Spacing.screenPadding.vertical,
+    paddingTop: 120, // Space for floating buttons (60 top + 40 button height + 20 gap)
     paddingBottom: 100,
   },
-  topBar: {
+  floatingButtons: {
+    position: 'absolute',
+    top: 60, // Below status bar
+    left: Spacing.screenPadding.horizontal,
+    right: Spacing.screenPadding.horizontal,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.gap.large,
+    zIndex: 10,
   },
-  headerRightButtons: {
-    flexDirection: 'row',
-    gap: Spacing.gap.small,
-  },
-  headerButton: {
+  floatingButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -1396,6 +1396,15 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerRightButtons: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
   },
   titleSection: {
     marginBottom: Spacing.gap.small,

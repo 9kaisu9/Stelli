@@ -10,9 +10,10 @@ interface ImagePickerProps {
   onSelectImages: (images: string[]) => void;
   compact?: boolean; // For a smaller inline display
   onPhotoPress?: (uri: string) => void;
+  maxImages?: number; // Maximum number of images allowed
 }
 
-export default function ImagePicker({ selectedImages, onSelectImages, compact = false, onPhotoPress }: ImagePickerProps) {
+export default function ImagePicker({ selectedImages, onSelectImages, compact = false, onPhotoPress, maxImages }: ImagePickerProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState<boolean | null>(null);
 
@@ -58,15 +59,29 @@ export default function ImagePicker({ selectedImages, onSelectImages, compact = 
       return;
     }
 
+    // If maxImages is 1, replace the current image; otherwise allow multiple selection
+    const allowMultiple = maxImages !== 1;
+
     let result = await ExpoImagePicker.launchImageLibraryAsync({
       mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: allowMultiple,
       quality: 1,
     });
 
     if (!result.canceled) {
       const newImageUris = result.assets.map(asset => asset.uri);
-      onSelectImages([...selectedImages, ...newImageUris]);
+
+      if (maxImages === 1) {
+        // Replace with single image
+        onSelectImages([newImageUris[0]]);
+      } else if (maxImages) {
+        // Limit to maxImages
+        const combined = [...selectedImages, ...newImageUris];
+        onSelectImages(combined.slice(0, maxImages));
+      } else {
+        // No limit
+        onSelectImages([...selectedImages, ...newImageUris]);
+      }
     }
   };
 
@@ -79,6 +94,8 @@ export default function ImagePicker({ selectedImages, onSelectImages, compact = 
   if (hasMediaLibraryPermission === null && Platform.OS !== 'web') {
     return <Text>Requesting for media library permission...</Text>;
   }
+
+  const canAddMore = !maxImages || selectedImages.length < maxImages;
 
   return (
     <View style={compact ? styles.compactContainer : styles.fullContainer}>
@@ -98,10 +115,12 @@ export default function ImagePicker({ selectedImages, onSelectImages, compact = 
             </TouchableOpacity>
           </View>
         ))}
-        <TouchableOpacity style={styles.addImageButton} onPress={handleChooseImage}>
-          <Ionicons name="add" size={32} color={Colors.gray} />
-          <Text style={styles.addImageText}>Add Photo</Text>
-        </TouchableOpacity>
+        {canAddMore && (
+          <TouchableOpacity style={styles.addImageButton} onPress={handleChooseImage}>
+            <Ionicons name="add" size={32} color={Colors.gray} />
+            <Text style={styles.addImageText}>Add Photo</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );

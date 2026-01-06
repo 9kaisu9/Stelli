@@ -9,6 +9,7 @@ interface CreateEntryData {
   user_id: string;
   rating: number | null;
   field_values: Record<string, any>;
+  main_image_url?: string | null;
   fieldDefinitions: FieldDefinition[];
 }
 
@@ -77,7 +78,13 @@ export function useCreateEntry() {
         }
       }
 
-      // 2. Create the entry with the processed field values
+      // 2. Handle main image upload
+      let mainImageUrl = data.main_image_url;
+      if (mainImageUrl && mainImageUrl.startsWith('file://')) {
+        mainImageUrl = await uploadFile(mainImageUrl, data.user_id);
+      }
+
+      // 3. Create the entry with the processed field values and main image
       const { data: newEntry, error } = await supabase
         .from('entries')
         .insert({
@@ -85,6 +92,7 @@ export function useCreateEntry() {
           user_id: data.user_id,
           rating: data.rating,
           field_values: processedFieldValues,
+          main_image_url: mainImageUrl,
         })
         .select()
         .single();

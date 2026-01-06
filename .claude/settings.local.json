@@ -25,18 +25,8 @@
       "Bash(dir:*)",
       "Bash(more:*)",
       "Bash(npx supabase gen types:*)",
-      "Bash(powershell:*)",
-      "Bash(npx expo start:*)",
       "Bash(cat:*)",
-      "Bash(npx supabase:*)",
-      "Bash(node scripts/create-storage-bucket.js:*)",
-      "Bash(node scripts/apply-storage-policies.js:*)",
-      "Bash(node scripts/create-storage-rls-policies.js:*)",
-      "Bash(node scripts/apply-storage-rls.js:*)",
-      "Bash(node scripts/apply-policies-via-api.js:*)",
-      "Bash(where:*)",
-      "Bash(node scripts/execute-sql-direct.js:*)",
-      "Bash(npx @modelcontextprotocol/cli:*)"
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

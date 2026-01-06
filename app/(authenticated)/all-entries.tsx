@@ -60,6 +60,20 @@ export default function AllEntriesScreen() {
   // Main view
   return (
     <View style={CommonStyles.screenContainer}>
+      {/* Floating Back Button */}
+      <View style={styles.floatingButtons} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.floatingBackButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={Colors.black} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -71,20 +85,6 @@ export default function AllEntriesScreen() {
           />
         }
       >
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
-        </View>
-
         {/* Title Section */}
         <View style={styles.titleSection}>
           <Text style={styles.pageTitle}>All Entries</Text>
@@ -126,7 +126,7 @@ export default function AllEntriesScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingTop: Spacing.screenPadding.vertical,
+    paddingTop: 110, // Space for floating button (60 top + 40 height + 10 margin)
     paddingBottom: Spacing.gap.xl,
   },
   centerContent: {
@@ -134,22 +134,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.screenPadding.horizontal,
   },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screenPadding.horizontal,
-    marginBottom: Spacing.gap.medium,
+  floatingButtons: {
+    position: 'absolute',
+    top: 60, // Below status bar
+    left: Spacing.screenPadding.horizontal,
+    zIndex: 10,
   },
-  backButton: {
+  floatingBackButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.button.neutral,
     borderWidth: 1,
     borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   titleSection: {
     paddingHorizontal: Spacing.screenPadding.horizontal,

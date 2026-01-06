@@ -59,6 +59,7 @@ export interface Entry {
   user_id: string;
   rating: number | null;
   field_values: Record<string, any>;
+  main_image_url?: string | null;
   created_at: string;
   updated_at: string;
 }

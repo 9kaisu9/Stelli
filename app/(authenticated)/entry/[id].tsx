@@ -5,7 +5,14 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const HERO_HEIGHT = 300;
+const HERO_TAP_MAX_HEIGHT = HERO_HEIGHT - 50; // Visible portion above the gradient
 
 function deepEqual(obj1: any, obj2: any): boolean {
   if (obj1 === obj2) return true;
@@ -24,7 +31,7 @@ function deepEqual(obj1: any, obj2: any): boolean {
   return false;
 }
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -36,6 +43,7 @@ import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
+import ImagePicker from '@/components/ImagePicker';
 import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import PhotoModal from '@/components/PhotoModal';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
@@ -51,6 +59,9 @@ export default function EntryDetailScreen() {
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [selectedPhotoUri, setSelectedPhotoUri] = useState<string | null>(null);
+
+  // Scroll animation for hero stretch and parallax
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const handlePhotoPress = (uri: string) => {
     console.log('🖼️ Entry screen: Photo press handler called with uri:', uri);
@@ -76,6 +87,7 @@ export default function EntryDetailScreen() {
   // Form state
   const [rating, setRating] = useState<number | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -87,6 +99,7 @@ export default function EntryDetailScreen() {
     if (entry) {
       setRating(entry.rating);
       setFieldValues(entry.field_values || {});
+      setMainImageUrl(entry.main_image_url || null);
       setHasChanges(false);
     }
   }, [entry]);
@@ -100,8 +113,9 @@ export default function EntryDetailScreen() {
 
     const ratingChanged = rating !== entry.rating;
     const fieldsChanged = !deepEqual(fieldValues, entry.field_values || {});
-    setHasChanges(ratingChanged || fieldsChanged);
-  }, [rating, fieldValues, entry, isEditing]);
+    const mainImageChanged = mainImageUrl !== (entry.main_image_url || null);
+    setHasChanges(ratingChanged || fieldsChanged || mainImageChanged);
+  }, [rating, fieldValues, mainImageUrl, entry, isEditing]);
 
   // Validate required fields
   const validateRequiredFields = () => {
@@ -175,12 +189,13 @@ export default function EntryDetailScreen() {
     if (entry) {
       setRating(entry.rating);
       setFieldValues(entry.field_values || {});
+      setMainImageUrl(entry.main_image_url || null);
     }
     setIsEditing(false);
   };
 
   const handleSave = async () => {
-    if (!entry) return;
+    if (!entry || !user || !list) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -190,9 +205,10 @@ export default function EntryDetailScreen() {
         updates: {
           rating,
           field_values: fieldValues,
+          main_image_url: mainImageUrl,
         },
-        fieldDefinitions: list.field_definitions,
         userId: user.id,
+        fieldDefinitions: list.field_definitions,
       });
 
       trackEvent('Entry Updated', { entryId: entry.id, listId: entry.list_id });
@@ -260,6 +276,19 @@ export default function EntryDetailScreen() {
   }
 
   const entryName = fieldValues.name || 'Unnamed Entry';
+  const hasHeroImage = !!entry.main_image_url;
+
+  // Hero image animations - zoom in on pull down, anchored at top
+  const heroScale = scrollY.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [1.8, 1.3], // Start at 1.3x, zoom to 1.8x when pulling down
+    extrapolate: 'clamp',
+  });
+  const heroTapHeight = scrollY.interpolate({
+    inputRange: [-100, 0, HERO_TAP_MAX_HEIGHT],
+    outputRange: [HERO_TAP_MAX_HEIGHT + 100, HERO_TAP_MAX_HEIGHT, 0],
+    extrapolate: 'clamp',
+  });
 
   // Action Sheet Options
   const cannotEditOptions: ActionSheetOption[] = [
@@ -297,235 +326,531 @@ export default function EntryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={Colors.black} />
+      {/* Hero Image (if exists and not in edit mode) */}
+      {hasHeroImage && !isEditing && (
+        <View style={styles.heroContainer}>
+          <TouchableOpacity
+            onPress={() => handlePhotoPress(entry.main_image_url!)}
+            activeOpacity={1}
+            style={styles.heroTouchable}
+          >
+            <Animated.Image
+              source={{ uri: entry.main_image_url! }}
+              style={[
+                styles.heroImage,
+                {
+                  transform: [{ scale: heroScale }],
+                  transformOrigin: 'top',
+                },
+              ]}
+              resizeMode="cover"
+            />
           </TouchableOpacity>
-          {/* Only show edit button for list owners */}
-          {canEdit && (
-            <View style={styles.headerRightButtons}>
-              {isEditing ? (
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancelEdit}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close" size={24} color={Colors.black} />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={handleEdit}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="create-outline" size={24} color={Colors.black} />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </View>
+      )}
 
-        {/* Entry Name */}
-        <View style={styles.entryNameContainer}>
-          {isEditing ? (
-            <>
-              <Text style={styles.nameLabel}>
-                Name
-                <Text style={styles.requiredMark}> *</Text>
-              </Text>
-              <TextInput
-                value={fieldValues.name || ''}
-                onChangeText={(text) => handleFieldChange('name', text)}
-                placeholder="Entry name"
-              />
-            </>
-          ) : (
-            <Text style={styles.entryName}>{entryName}</Text>
-          )}
-        </View>
+      {/* Transparent tap layer so the hero remains tappable even when content overlaps */}
+      {hasHeroImage && !isEditing && (
+        <Animated.View style={[styles.heroTapOverlay, { height: heroTapHeight }]} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.heroTapTouchable}
+            activeOpacity={1}
+            onPress={() => handlePhotoPress(entry.main_image_url!)}
+          />
+        </Animated.View>
+      )}
 
-        {/* Rating Section - Outside Card */}
-        {list.rating_type !== 'none' && (
-          <View style={styles.ratingSection}>
-            {list.rating_type === 'stars' && (
-              <View style={styles.ratingField}>
-                {isEditing && (
-                  <Text style={styles.ratingLabel}>
-                    Rating
-                    <Text style={styles.requiredMark}> *</Text>
-                  </Text>
-                )}
-                <StarRating
-                  rating={rating || 0}
-                  size="large"
-                  readonly={!isEditing}
-                  onRatingChange={isEditing ? setRating : undefined}
-                  color={Colors.black}
-                />
-              </View>
-            )}
-            {list.rating_type === 'points' && (
-              <View style={styles.ratingField}>
-                {isEditing && (
-                  <Text style={styles.ratingLabel}>
-                    Rating
-                    <Text style={styles.requiredMark}> *</Text>
-                  </Text>
-                )}
-                {isEditing ? (
-                  <TextInput
-                    value={rating?.toString() || ''}
-                    onChangeText={(text) => {
-                      const num = parseFloat(text);
-                      setRating(isNaN(num) ? null : num);
-                    }}
-                    placeholder="Enter points"
-                    keyboardType="numeric"
-                  />
-                ) : (
-                  <Text style={styles.ratingDisplayValue}>
-                    {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                  </Text>
-                )}
-              </View>
-            )}
-            {list.rating_type === 'scale' && (
-              <View style={styles.ratingField}>
-                {isEditing && (
-                  <Text style={styles.ratingLabel}>
-                    Rating
-                    <Text style={styles.requiredMark}> *</Text>
-                  </Text>
-                )}
-                {isEditing ? (
-                  <TextInput
-                    value={rating?.toString() || ''}
-                    onChangeText={(text) => {
-                      const num = parseFloat(text);
-                      setRating(isNaN(num) ? null : num);
-                    }}
-                    placeholder={`1-${list.rating_config.max}`}
-                    keyboardType="numeric"
-                  />
-                ) : (
-                  <Text style={styles.ratingDisplayValue}>
-                    {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                  </Text>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Additional Fields - Exclude the Name field (id: '1') */}
-        {isEditing ? (
-          // Edit mode: Fields without container
-          list.field_definitions
-            ?.filter((field) => field.id !== '1')
-            ?.sort((a, b) => a.order - b.order)
-            .map((field) => (
-              <View key={field.id} style={styles.fieldSection}>
-                <Text style={styles.fieldLabel}>
-                  {field.name}
-                  {field.required && <Text style={styles.requiredMark}> *</Text>}
-                </Text>
-                <FieldInput
-                  field={field}
-                  value={fieldValues[field.id]}
-                  onChange={(value) => handleFieldChange(field.id, value)}
-                />
-              </View>
-            ))
-        ) : (
-          // View mode: Fields in a container with white background and dividers
-          (() => {
-            const customFields = list.field_definitions?.filter((field) => field.id !== '1') || [];
-            // Filter out fields with no value
-            const fieldsWithValues = customFields.filter((field) => {
-              const value = fieldValues[field.id];
-              if (value === null || value === undefined) return false;
-              if (typeof value === 'string' && value.trim() === '') return false;
-              if (Array.isArray(value) && value.length === 0) return false;
-              return true;
-            });
-
-            return (
-              fieldsWithValues.length > 0 && (
-                <View style={styles.fieldsContainer}>
-                  {fieldsWithValues
-                    .sort((a, b) => a.order - b.order)
-                    .map((field, index) => (
-                      <View key={field.id}>
-                        <View style={styles.fieldRow}>
-                          <Text style={styles.fieldLabel}>
-                            {field.name}
-                          </Text>
-                          <FieldInput
-                            field={field}
-                            value={fieldValues[field.id]}
-                            onChange={() => {}}
-                            readonly={true}
-                            onPhotoPress={handlePhotoPress}
-                          />
-                        </View>
-                        {index < fieldsWithValues.length - 1 && (
-                          <View style={styles.fieldDivider} />
-                        )}
-                      </View>
-                    ))}
-                </View>
-              )
-            );
-          })()
-        )}
-
-        {/* Metadata */}
-        <View style={styles.metadata}>
-          <View style={styles.metadataRow}>
-            <Ionicons name="calendar-outline" size={16} color={Colors.gray} />
-            <Text style={styles.metadataText}>
-              Created: {formatDate(entry.created_at)}
-            </Text>
-          </View>
-          <View style={styles.metadataRow}>
-            <Ionicons name="time-outline" size={16} color={Colors.gray} />
-            <Text style={styles.metadataText}>
-              Updated: {formatDate(entry.updated_at)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        {isEditing && (
-          <View style={styles.editActions}>
-            <View style={styles.editButtonRow}>
-              <Button
-                label={updateEntryMutation.isPending ? 'Saving...' : 'Save Changes'}
-                variant="primary"
-                onPress={handleSave}
-                disabled={updateEntryMutation.isPending || !canSave}
-                fullWidth
-              />
-            </View>
-            <View style={styles.deleteButtonContainer}>
+      {/* Floating Action Buttons - Always visible */}
+      <View style={styles.floatingButtons} pointerEvents="box-none">
+        <TouchableOpacity onPress={handleBack} style={styles.floatingBackButton}>
+          <Ionicons name="arrow-back" size={24} color={Colors.black} />
+        </TouchableOpacity>
+        {/* Only show edit button for list owners */}
+        {canEdit && (
+          <View style={styles.floatingRightButtons} pointerEvents="box-none">
+            {isEditing ? (
               <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDelete}
+                style={styles.floatingCancelButton}
+                onPress={handleCancelEdit}
                 activeOpacity={0.7}
               >
-                <Ionicons name="trash-outline" size={20} color={Colors.error} />
-                <Text style={styles.deleteButtonText}>Delete Entry</Text>
+                <Ionicons name="close" size={24} color={Colors.black} />
               </TouchableOpacity>
-            </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.floatingEditButton}
+                onPress={handleEdit}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="create-outline" size={24} color={Colors.black} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
-      </ScrollView>
+      </View>
+
+      <Animated.ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          hasHeroImage && !isEditing && styles.contentWithHero,
+        ]}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+      >
+        {/* Information Section - Single unified container */}
+        {hasHeroImage && !isEditing ? (
+          <View style={styles.informationSection}>
+            {/* Gradient Section - Top part */}
+            <LinearGradient
+              colors={['rgba(235, 254, 255, 0)', 'rgba(235, 254, 255, 0.7)', 'rgba(235, 254, 255, 0.95)', Colors.background]}
+              locations={[0, 0.3, 0.55, 1]}
+              style={styles.gradientSection}
+              pointerEvents="none"
+            >
+              {/* Title in black within gradient */}
+              {!isEditing && (
+                <View style={styles.titleContainer}>
+                  <Text style={styles.scrollableTitleText}>{entryName}</Text>
+                </View>
+              )}
+            </LinearGradient>
+
+            {/* Content Section - Bottom part with solid background */}
+            <View style={styles.contentSection}>
+              {/* Entry Name - Only show in edit mode */}
+              {isEditing && (
+                <View style={styles.entryNameContainer}>
+                  <Text style={styles.nameLabel}>
+                    Name
+                    <Text style={styles.requiredMark}> *</Text>
+                  </Text>
+                  <TextInput
+                    value={fieldValues.name || ''}
+                    onChangeText={(text) => handleFieldChange('name', text)}
+                    placeholder="Entry name"
+                  />
+                </View>
+              )}
+
+              {/* Main Image - Only show in edit mode */}
+              {isEditing && (
+                <View style={styles.fieldSection}>
+                  <Text style={styles.fieldLabel}>Main Image</Text>
+                  <ImagePicker
+                    selectedImages={mainImageUrl ? [mainImageUrl] : []}
+                    onSelectImages={(images) => {
+                      if (images.length > 0) {
+                        setMainImageUrl(images[0]);
+                      } else {
+                        setMainImageUrl(null);
+                      }
+                    }}
+                    compact
+                    onPhotoPress={handlePhotoPress}
+                    maxImages={1}
+                  />
+                </View>
+              )}
+
+              {/* Rating Section */}
+              {list.rating_type !== 'none' && (
+                <View style={styles.ratingSection}>
+                  {list.rating_type === 'stars' && (
+                    <View style={styles.ratingField}>
+                      {isEditing && (
+                        <Text style={styles.ratingLabel}>
+                          Rating
+                          <Text style={styles.requiredMark}> *</Text>
+                        </Text>
+                      )}
+                      <StarRating
+                        rating={rating || 0}
+                        size="large"
+                        readonly={!isEditing}
+                        onRatingChange={isEditing ? setRating : undefined}
+                        color={Colors.black}
+                      />
+                    </View>
+                  )}
+                  {list.rating_type === 'points' && (
+                    <View style={styles.ratingField}>
+                      {isEditing && (
+                        <Text style={styles.ratingLabel}>
+                          Rating
+                          <Text style={styles.requiredMark}> *</Text>
+                        </Text>
+                      )}
+                      {isEditing ? (
+                        <TextInput
+                          value={rating?.toString() || ''}
+                          onChangeText={(text) => {
+                            const num = parseFloat(text);
+                            setRating(isNaN(num) ? null : num);
+                          }}
+                          placeholder="Enter points"
+                          keyboardType="numeric"
+                        />
+                      ) : (
+                        <Text style={styles.ratingDisplayValue}>
+                          {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                  {list.rating_type === 'scale' && (
+                    <View style={styles.ratingField}>
+                      {isEditing && (
+                        <Text style={styles.ratingLabel}>
+                          Rating
+                          <Text style={styles.requiredMark}> *</Text>
+                        </Text>
+                      )}
+                      {isEditing ? (
+                        <TextInput
+                          value={rating?.toString() || ''}
+                          onChangeText={(text) => {
+                            const num = parseFloat(text);
+                            setRating(isNaN(num) ? null : num);
+                          }}
+                          placeholder={`1-${list.rating_config.max}`}
+                          keyboardType="numeric"
+                        />
+                      ) : (
+                        <Text style={styles.ratingDisplayValue}>
+                          {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Additional Fields - Exclude the Name field (id: '1') */}
+              {isEditing ? (
+                // Edit mode: Fields without container
+                list.field_definitions
+                  ?.filter((field) => field.id !== '1')
+                  ?.sort((a, b) => a.order - b.order)
+                  .map((field) => (
+                    <View key={field.id} style={styles.fieldSection}>
+                      <Text style={styles.fieldLabel}>
+                        {field.name}
+                        {field.required && <Text style={styles.requiredMark}> *</Text>}
+                      </Text>
+                      <FieldInput
+                        field={field}
+                        value={fieldValues[field.id]}
+                        onChange={(value) => handleFieldChange(field.id, value)}
+                      />
+                    </View>
+                  ))
+              ) : (
+                // View mode: Fields in a container with white background and dividers
+                (() => {
+                  const customFields = list.field_definitions?.filter((field) => field.id !== '1') || [];
+                  // Filter out fields with no value
+                  const fieldsWithValues = customFields.filter((field) => {
+                    const value = fieldValues[field.id];
+                    if (value === null || value === undefined) return false;
+                    if (typeof value === 'string' && value.trim() === '') return false;
+                    if (Array.isArray(value) && value.length === 0) return false;
+                    return true;
+                  });
+
+                  return (
+                    fieldsWithValues.length > 0 && (
+                      <View style={styles.fieldsContainer}>
+                        {fieldsWithValues
+                          .sort((a, b) => a.order - b.order)
+                          .map((field, index) => (
+                            <View key={field.id}>
+                              <View style={styles.fieldRow}>
+                                <Text style={styles.fieldLabel}>
+                                  {field.name}
+                                </Text>
+                                <FieldInput
+                                  field={field}
+                                  value={fieldValues[field.id]}
+                                  onChange={() => {}}
+                                  readonly={true}
+                                  onPhotoPress={handlePhotoPress}
+                                />
+                              </View>
+                              {index < fieldsWithValues.length - 1 && (
+                                <View style={styles.fieldDivider} />
+                              )}
+                            </View>
+                          ))}
+                      </View>
+                    )
+                  );
+                })()
+              )}
+
+              {/* Metadata */}
+              <View style={styles.metadata}>
+                <View style={styles.metadataRow}>
+                  <Ionicons name="calendar-outline" size={16} color={Colors.gray} />
+                  <Text style={styles.metadataText}>
+                    Created: {formatDate(entry.created_at)}
+                  </Text>
+                </View>
+                <View style={styles.metadataRow}>
+                  <Ionicons name="time-outline" size={16} color={Colors.gray} />
+                  <Text style={styles.metadataText}>
+                    Updated: {formatDate(entry.updated_at)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              {isEditing && (
+                <View style={styles.editActions}>
+                  <View style={styles.editButtonRow}>
+                    <Button
+                      label={updateEntryMutation.isPending ? 'Saving...' : 'Save Changes'}
+                      variant="primary"
+                      onPress={handleSave}
+                      disabled={updateEntryMutation.isPending || !canSave}
+                      fullWidth
+                    />
+                  </View>
+                  <View style={styles.deleteButtonContainer}>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={handleDelete}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                      <Text style={styles.deleteButtonText}>Delete Entry</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        ) : (
+          /* No Hero - Regular Content without Gradient */
+          <>
+            {/* Entry Name */}
+            <View style={styles.entryNameContainer}>
+              {isEditing ? (
+                <>
+                  <Text style={styles.nameLabel}>
+                    Name
+                    <Text style={styles.requiredMark}> *</Text>
+                  </Text>
+                  <TextInput
+                    value={fieldValues.name || ''}
+                    onChangeText={(text) => handleFieldChange('name', text)}
+                    placeholder="Entry name"
+                  />
+                </>
+              ) : (
+                <Text style={styles.entryName}>{entryName}</Text>
+              )}
+            </View>
+
+            {/* Main Image - Only show in edit mode */}
+            {isEditing && (
+              <View style={styles.fieldSection}>
+                <Text style={styles.fieldLabel}>Main Image</Text>
+                <ImagePicker
+                  selectedImages={mainImageUrl ? [mainImageUrl] : []}
+                  onSelectImages={(images) => {
+                    if (images.length > 0) {
+                      setMainImageUrl(images[0]);
+                    } else {
+                      setMainImageUrl(null);
+                    }
+                  }}
+                  compact
+                  onPhotoPress={handlePhotoPress}
+                  maxImages={1}
+                />
+              </View>
+            )}
+
+            {/* Rating Section */}
+            {list.rating_type !== 'none' && (
+              <View style={styles.ratingSection}>
+                {list.rating_type === 'stars' && (
+                  <View style={styles.ratingField}>
+                    {isEditing && (
+                      <Text style={styles.ratingLabel}>
+                        Rating
+                        <Text style={styles.requiredMark}> *</Text>
+                      </Text>
+                    )}
+                    <StarRating
+                      rating={rating || 0}
+                      size="large"
+                      readonly={!isEditing}
+                      onRatingChange={isEditing ? setRating : undefined}
+                      color={Colors.black}
+                    />
+                  </View>
+                )}
+                {list.rating_type === 'points' && (
+                  <View style={styles.ratingField}>
+                    {isEditing && (
+                      <Text style={styles.ratingLabel}>
+                        Rating
+                        <Text style={styles.requiredMark}> *</Text>
+                      </Text>
+                    )}
+                    {isEditing ? (
+                      <TextInput
+                        value={rating?.toString() || ''}
+                        onChangeText={(text) => {
+                          const num = parseFloat(text);
+                          setRating(isNaN(num) ? null : num);
+                        }}
+                        placeholder="Enter points"
+                        keyboardType="numeric"
+                      />
+                    ) : (
+                      <Text style={styles.ratingDisplayValue}>
+                        {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                      </Text>
+                    )}
+                  </View>
+                )}
+                {list.rating_type === 'scale' && (
+                  <View style={styles.ratingField}>
+                    {isEditing && (
+                      <Text style={styles.ratingLabel}>
+                        Rating
+                        <Text style={styles.requiredMark}> *</Text>
+                      </Text>
+                    )}
+                    {isEditing ? (
+                      <TextInput
+                        value={rating?.toString() || ''}
+                        onChangeText={(text) => {
+                          const num = parseFloat(text);
+                          setRating(isNaN(num) ? null : num);
+                        }}
+                        placeholder={`1-${list.rating_config.max}`}
+                        keyboardType="numeric"
+                      />
+                    ) : (
+                      <Text style={styles.ratingDisplayValue}>
+                        {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Additional Fields */}
+            {isEditing ? (
+              list.field_definitions
+                ?.filter((field) => field.id !== '1')
+                ?.sort((a, b) => a.order - b.order)
+                .map((field) => (
+                  <View key={field.id} style={styles.fieldSection}>
+                    <Text style={styles.fieldLabel}>
+                      {field.name}
+                      {field.required && <Text style={styles.requiredMark}> *</Text>}
+                    </Text>
+                    <FieldInput
+                      field={field}
+                      value={fieldValues[field.id]}
+                      onChange={(value) => handleFieldChange(field.id, value)}
+                    />
+                  </View>
+                ))
+            ) : (
+              (() => {
+                const customFields = list.field_definitions?.filter((field) => field.id !== '1') || [];
+                const fieldsWithValues = customFields.filter((field) => {
+                  const value = fieldValues[field.id];
+                  if (value === null || value === undefined) return false;
+                  if (typeof value === 'string' && value.trim() === '') return false;
+                  if (Array.isArray(value) && value.length === 0) return false;
+                  return true;
+                });
+
+                return (
+                  fieldsWithValues.length > 0 && (
+                    <View style={styles.fieldsContainer}>
+                      {fieldsWithValues
+                        .sort((a, b) => a.order - b.order)
+                        .map((field, index) => (
+                          <View key={field.id}>
+                            <View style={styles.fieldRow}>
+                              <Text style={styles.fieldLabel}>
+                                {field.name}
+                              </Text>
+                              <FieldInput
+                                field={field}
+                                value={fieldValues[field.id]}
+                                onChange={() => {}}
+                                readonly={true}
+                                onPhotoPress={handlePhotoPress}
+                              />
+                            </View>
+                            {index < fieldsWithValues.length - 1 && (
+                              <View style={styles.fieldDivider} />
+                            )}
+                          </View>
+                        ))}
+                    </View>
+                  )
+                );
+              })()
+            )}
+
+            {/* Metadata */}
+            <View style={styles.metadata}>
+              <View style={styles.metadataRow}>
+                <Ionicons name="calendar-outline" size={16} color={Colors.gray} />
+                <Text style={styles.metadataText}>
+                  Created: {formatDate(entry.created_at)}
+                </Text>
+              </View>
+              <View style={styles.metadataRow}>
+                <Ionicons name="time-outline" size={16} color={Colors.gray} />
+                <Text style={styles.metadataText}>
+                  Updated: {formatDate(entry.updated_at)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            {isEditing && (
+              <View style={styles.editActions}>
+                <View style={styles.editButtonRow}>
+                  <Button
+                    label={updateEntryMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    variant="primary"
+                    onPress={handleSave}
+                    disabled={updateEntryMutation.isPending || !canSave}
+                    fullWidth
+                  />
+                </View>
+                <View style={styles.deleteButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={handleDelete}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                    <Text style={styles.deleteButtonText}>Delete Entry</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+      </Animated.ScrollView>
 
       {/* Cannot Edit Message */}
       <CustomActionSheet
@@ -575,6 +900,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  heroContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_HEIGHT,
+    zIndex: 0,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroTouchable: {
+    width: '100%',
+    height: '100%',
+  },
+  heroTapOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+  heroTapTouchable: {
+    width: '100%',
+    height: '100%',
+  },
+  floatingButtons: {
+    position: 'absolute',
+    top: 60, // Below status bar
+    left: Spacing.screenPadding.horizontal,
+    right: Spacing.screenPadding.horizontal,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  floatingBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.button.neutral,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  floatingRightButtons: {
+    flexDirection: 'row',
+    gap: Spacing.gap.small,
+  },
+  floatingEditButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.button.neutral,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  floatingCancelButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.button.neutral,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   loadingContainer: {
     flex: 1,
@@ -639,9 +1050,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: Spacing.screenPadding.horizontal,
-    paddingTop: Spacing.screenPadding.vertical,
     paddingBottom: 40,
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingTop: 120, // Space for floating buttons when no hero (60 top + 40 button height + 20 gap)
+  },
+  contentWithHero: {
+    paddingTop: HERO_TAP_MAX_HEIGHT, // Content starts lower to completely hide the border
+    paddingHorizontal: 0, // Remove horizontal padding when hero exists
+  },
+  informationSection: {
+    // Single unified container for gradient + content
+  },
+  gradientSection: {
+    paddingHorizontal: Spacing.screenPadding.horizontal,
+    paddingTop: 70, // Reduced space for smaller gradient section
+    paddingBottom: Spacing.gap.medium, // Reduced space at bottom of gradient
+  },
+  titleContainer: {
+    // Container for title within gradient
+  },
+  scrollableTitleText: {
+    fontSize: Typography.fontSize.h1,
+    fontFamily: 'Nunito_700Bold',
+    color: Colors.black,
+  },
+  contentSection: {
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.screenPadding.horizontal,
   },
   entryNameContainer: {
     marginBottom: Spacing.gap.small,
@@ -653,7 +1088,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.gap.small,
   },
   entryName: {
-    fontSize: Typography.fontSize.h2,
+    fontSize: Typography.fontSize.h1,
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },

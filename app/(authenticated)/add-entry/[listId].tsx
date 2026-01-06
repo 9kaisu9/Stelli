@@ -18,6 +18,7 @@ import Button from '@/components/Button';
 import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
+import ImagePicker from '@/components/ImagePicker';
 import CustomActionSheet, { ActionSheetOption } from '@/components/CustomActionSheet';
 import PhotoModal from '@/components/PhotoModal';
 import { trackScreenView, trackEvent } from '@/lib/posthog';
@@ -33,6 +34,7 @@ export default function AddEntryScreen() {
   // Form state
   const [rating, setRating] = useState<number | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [showSuccessSheet, setShowSuccessSheet] = useState(false);
   const [showErrorSheet, setShowErrorSheet] = useState(false);
   const [selectedPhotoUri, setSelectedPhotoUri] = useState<string | null>(null);
@@ -152,6 +154,7 @@ export default function AddEntryScreen() {
         user_id: user.id,
         rating,
         field_values: fieldValues,
+        main_image_url: mainImageUrl,
         fieldDefinitions: list.field_definitions,
       });
 
@@ -210,6 +213,24 @@ export default function AddEntryScreen() {
             value={fieldValues.name || ''}
             onChangeText={(text) => handleFieldChange('name', text)}
             placeholder="Entry name"
+          />
+        </View>
+
+        {/* Main Image */}
+        <View style={styles.fieldSection}>
+          <Text style={styles.fieldLabel}>Main Image</Text>
+          <ImagePicker
+            selectedImages={mainImageUrl ? [mainImageUrl] : []}
+            onSelectImages={(images) => {
+              if (images.length > 0) {
+                setMainImageUrl(images[0]);
+              } else {
+                setMainImageUrl(null);
+              }
+            }}
+            compact
+            onPhotoPress={setSelectedPhotoUri}
+            maxImages={1}
           />
         </View>
 
