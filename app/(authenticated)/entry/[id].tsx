@@ -40,7 +40,6 @@ import { useListDetail } from '@/lib/hooks/useListEntries';
 import { useListPermissions } from '@/lib/hooks/useListPermissions';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuide';
 import Button from '@/components/Button';
-import StarRating from '@/components/StarRating';
 import TextInput from '@/components/TextInput';
 import FieldInput from '@/components/FieldInput';
 import ImagePicker from '@/components/ImagePicker';
@@ -86,6 +85,7 @@ export default function EntryDetailScreen() {
 
   // Form state
   const [rating, setRating] = useState<number | null>(null);
+  const [ratingInput, setRatingInput] = useState<string>(''); // Raw input string for rating
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -98,6 +98,7 @@ export default function EntryDetailScreen() {
   useEffect(() => {
     if (entry) {
       setRating(entry.rating);
+      setRatingInput(entry.rating !== null ? entry.rating.toString() : '');
       setFieldValues(entry.field_values || {});
       setMainImageUrl(entry.main_image_url || null);
       setHasChanges(false);
@@ -133,16 +134,21 @@ export default function EntryDetailScreen() {
 
     // Validate rating bounds based on rating type
     if (rating !== null && rating !== undefined) {
-      const ratingConfig = list.rating_config || { max: 5, step: 0.5 };
+      // Check for max 1 decimal place
+      const decimalPlaces = (rating.toString().split('.')[1] || '').length;
+      if (decimalPlaces > 1) return false;
+
       if (list.rating_type === 'stars') {
-        // Stars: 0.5 to 5 in increments of 0.5
-        if (rating < 0.5 || rating > 5) return false;
+        // Stars: 1 to 5 with max 1 decimal place
+        if (rating < 1 || rating > 5) return false;
       } else if (list.rating_type === 'points') {
-        // Points: 1 to 100 in increments of 1
-        if (rating < 1 || rating > 100 || rating % 1 !== 0) return false;
+        // Points: 1 to 100 with max 1 decimal place
+        const maxPoints = list.rating_config?.max || 100;
+        if (rating < 1 || rating > maxPoints) return false;
       } else if (list.rating_type === 'scale') {
-        // Scale: 1 to 10 in increments of 1
-        if (rating < 1 || rating > 10 || rating % 1 !== 0) return false;
+        // Scale: 1 to 10 with max 1 decimal place
+        const maxScale = list.rating_config?.max || 10;
+        if (rating < 1 || rating > maxScale) return false;
       }
     }
 
@@ -188,6 +194,7 @@ export default function EntryDetailScreen() {
     // Reset to original values
     if (entry) {
       setRating(entry.rating);
+      setRatingInput(entry.rating !== null ? entry.rating.toString() : '');
       setFieldValues(entry.field_values || {});
       setMainImageUrl(entry.main_image_url || null);
     }
@@ -468,13 +475,49 @@ export default function EntryDetailScreen() {
                           <Text style={styles.requiredMark}> *</Text>
                         </Text>
                       )}
-                      <StarRating
-                        rating={rating || 0}
-                        size="large"
-                        readonly={!isEditing}
-                        onRatingChange={isEditing ? setRating : undefined}
-                        color={Colors.black}
-                      />
+                      {isEditing ? (
+                        <TextInput
+                          value={ratingInput}
+                          onChangeText={(text) => {
+                            // Allow empty string
+                            if (text === '') {
+                              setRatingInput('');
+                              setRating(null);
+                              return;
+                            }
+                            // Allow typing decimal point and one decimal digit
+                            // Valid: "4", "4.", "4.5"
+                            // Invalid: "4.55", "4.5.3"
+                            const decimalParts = text.split('.');
+                            if (decimalParts.length > 2) {
+                              return; // More than one decimal point
+                            }
+                            if (decimalParts[1] !== undefined && decimalParts[1].length > 1) {
+                              return; // More than 1 decimal digit
+                            }
+                            // Update the input string
+                            setRatingInput(text);
+                            // Allow intermediate states like "4." or final states like "4.5"
+                            if (text.endsWith('.')) {
+                              // Just typed decimal point, don't parse yet but keep the input
+                              return;
+                            }
+                            const num = parseFloat(text);
+                            if (!isNaN(num)) {
+                              setRating(num);
+                            }
+                          }}
+                          placeholder="1-5"
+                          keyboardType="decimal-pad"
+                        />
+                      ) : (
+                        <View style={styles.ratingDisplayContainer}>
+                          <Ionicons name="star" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                          <Text style={styles.ratingDisplayValue}>
+                            {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / 5` : 'No rating'}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   )}
                   {list.rating_type === 'points' && (
@@ -489,16 +532,31 @@ export default function EntryDetailScreen() {
                         <TextInput
                           value={rating?.toString() || ''}
                           onChangeText={(text) => {
+                            // Allow empty string
+                            if (text === '') {
+                              setRating(null);
+                              return;
+                            }
+                            // Check for valid decimal format (max 1 decimal place)
+                            const decimalParts = text.split('.');
+                            if (decimalParts.length > 2 || (decimalParts[1] && decimalParts[1].length > 1)) {
+                              return; // Ignore input if more than 1 decimal place
+                            }
                             const num = parseFloat(text);
-                            setRating(isNaN(num) ? null : num);
+                            if (!isNaN(num)) {
+                              setRating(num);
+                            }
                           }}
-                          placeholder="Enter points"
-                          keyboardType="numeric"
+                          placeholder="1-100"
+                          keyboardType="decimal-pad"
                         />
                       ) : (
-                        <Text style={styles.ratingDisplayValue}>
-                          {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                        </Text>
+                        <View style={styles.ratingDisplayContainer}>
+                          <Ionicons name="trophy" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                          <Text style={styles.ratingDisplayValue}>
+                            {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / ${list.rating_config.max}` : 'No rating'}
+                          </Text>
+                        </View>
                       )}
                     </View>
                   )}
@@ -514,16 +572,31 @@ export default function EntryDetailScreen() {
                         <TextInput
                           value={rating?.toString() || ''}
                           onChangeText={(text) => {
+                            // Allow empty string
+                            if (text === '') {
+                              setRating(null);
+                              return;
+                            }
+                            // Check for valid decimal format (max 1 decimal place)
+                            const decimalParts = text.split('.');
+                            if (decimalParts.length > 2 || (decimalParts[1] && decimalParts[1].length > 1)) {
+                              return; // Ignore input if more than 1 decimal place
+                            }
                             const num = parseFloat(text);
-                            setRating(isNaN(num) ? null : num);
+                            if (!isNaN(num)) {
+                              setRating(num);
+                            }
                           }}
                           placeholder={`1-${list.rating_config.max}`}
-                          keyboardType="numeric"
+                          keyboardType="decimal-pad"
                         />
                       ) : (
-                        <Text style={styles.ratingDisplayValue}>
-                          {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                        </Text>
+                        <View style={styles.ratingDisplayContainer}>
+                          <Ionicons name="analytics" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                          <Text style={styles.ratingDisplayValue}>
+                            {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / ${list.rating_config.max}` : 'No rating'}
+                          </Text>
+                        </View>
                       )}
                     </View>
                   )}
@@ -687,13 +760,49 @@ export default function EntryDetailScreen() {
                         <Text style={styles.requiredMark}> *</Text>
                       </Text>
                     )}
-                    <StarRating
-                      rating={rating || 0}
-                      size="large"
-                      readonly={!isEditing}
-                      onRatingChange={isEditing ? setRating : undefined}
-                      color={Colors.black}
-                    />
+                    {isEditing ? (
+                      <TextInput
+                        value={ratingInput}
+                        onChangeText={(text) => {
+                          // Allow empty string
+                          if (text === '') {
+                            setRatingInput('');
+                            setRating(null);
+                            return;
+                          }
+                          // Allow typing decimal point and one decimal digit
+                          // Valid: "4", "4.", "4.5"
+                          // Invalid: "4.55", "4.5.3"
+                          const decimalParts = text.split('.');
+                          if (decimalParts.length > 2) {
+                            return; // More than one decimal point
+                          }
+                          if (decimalParts[1] !== undefined && decimalParts[1].length > 1) {
+                            return; // More than 1 decimal digit
+                          }
+                          // Update the input string
+                          setRatingInput(text);
+                          // Allow intermediate states like "4." or final states like "4.5"
+                          if (text.endsWith('.')) {
+                            // Just typed decimal point, don't parse yet but keep the input
+                            return;
+                          }
+                          const num = parseFloat(text);
+                          if (!isNaN(num)) {
+                            setRating(num);
+                          }
+                        }}
+                        placeholder="1-5"
+                        keyboardType="decimal-pad"
+                      />
+                    ) : (
+                      <View style={styles.ratingDisplayContainer}>
+                        <Ionicons name="star" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                        <Text style={styles.ratingDisplayValue}>
+                          {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / 5` : 'No rating'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
                 {list.rating_type === 'points' && (
@@ -708,16 +817,31 @@ export default function EntryDetailScreen() {
                       <TextInput
                         value={rating?.toString() || ''}
                         onChangeText={(text) => {
+                          // Allow empty string
+                          if (text === '') {
+                            setRating(null);
+                            return;
+                          }
+                          // Check for valid decimal format (max 1 decimal place)
+                          const decimalParts = text.split('.');
+                          if (decimalParts.length > 2 || (decimalParts[1] && decimalParts[1].length > 1)) {
+                            return; // Ignore input if more than 1 decimal place
+                          }
                           const num = parseFloat(text);
-                          setRating(isNaN(num) ? null : num);
+                          if (!isNaN(num)) {
+                            setRating(num);
+                          }
                         }}
-                        placeholder="Enter points"
-                        keyboardType="numeric"
+                        placeholder="1-100"
+                        keyboardType="decimal-pad"
                       />
                     ) : (
-                      <Text style={styles.ratingDisplayValue}>
-                        {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                      </Text>
+                      <View style={styles.ratingDisplayContainer}>
+                        <Ionicons name="trophy" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                        <Text style={styles.ratingDisplayValue}>
+                          {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / ${list.rating_config.max}` : 'No rating'}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 )}
@@ -733,16 +857,31 @@ export default function EntryDetailScreen() {
                       <TextInput
                         value={rating?.toString() || ''}
                         onChangeText={(text) => {
+                          // Allow empty string
+                          if (text === '') {
+                            setRating(null);
+                            return;
+                          }
+                          // Check for valid decimal format (max 1 decimal place)
+                          const decimalParts = text.split('.');
+                          if (decimalParts.length > 2 || (decimalParts[1] && decimalParts[1].length > 1)) {
+                            return; // Ignore input if more than 1 decimal place
+                          }
                           const num = parseFloat(text);
-                          setRating(isNaN(num) ? null : num);
+                          if (!isNaN(num)) {
+                            setRating(num);
+                          }
                         }}
                         placeholder={`1-${list.rating_config.max}`}
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                       />
                     ) : (
-                      <Text style={styles.ratingDisplayValue}>
-                        {rating !== null ? `${rating} / ${list.rating_config.max}` : 'No rating'}
-                      </Text>
+                      <View style={styles.ratingDisplayContainer}>
+                        <Ionicons name="analytics" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+                        <Text style={styles.ratingDisplayValue}>
+                          {rating !== null ? `${rating % 1 === 0 ? rating : rating.toFixed(1)} / ${list.rating_config.max}` : 'No rating'}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 )}
@@ -1103,9 +1242,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },
+  ratingDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingDisplayIcon: {
+    marginRight: 6,
+  },
   ratingDisplayValue: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },
   fieldsContainer: {

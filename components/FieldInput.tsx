@@ -1,12 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Image, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/styleGuide';
 import { FieldDefinition } from '@/constants/types';
 import TextInput from '@/components/TextInput';
-import StarRating from '@/components/StarRating';
 import ImagePicker from '@/components/ImagePicker';
 
 interface FieldInputProps {
@@ -20,6 +19,14 @@ interface FieldInputProps {
 export default function FieldInput({ field, value, onChange, readonly = false, onPhotoPress }: FieldInputProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDateValue, setTempDateValue] = useState<Date | null>(null);
+  const [ratingInput, setRatingInput] = useState<string>(''); // Raw input string for rating
+
+  // Sync ratingInput with value prop for rating fields
+  useEffect(() => {
+    if (field.type === 'rating' && !readonly) {
+      setRatingInput(value !== null && value !== undefined ? value.toString() : '');
+    }
+  }, [value, field.type, readonly]);
 
   // TEXT INPUT
   if (field.type === 'text') {
@@ -312,59 +319,63 @@ export default function FieldInput({ field, value, onChange, readonly = false, o
   if (field.type === 'rating') {
     // Use field's ratingConfig if available, otherwise default to stars (5 max, 0.5 step)
     const max = field.ratingConfig?.max || 5;
-    const step = field.ratingConfig?.step || 0.5;
 
     if (readonly) {
-      // In readonly mode, show star rating for star-based fields
-      if (max <= 10 && step === 0.5) {
-        return (
-          <StarRating
-            rating={value || 0}
-            size="large"
-            readonly={true}
-            color={Colors.black}
-          />
-        );
+      // In readonly mode, show icon + text format
+      const formattedRating = value !== null && value !== undefined
+        ? (value % 1 === 0 ? value.toString() : value.toFixed(1))
+        : null;
+
+      if (formattedRating === null) {
+        return <Text style={styles.readonlyText}>Not set</Text>;
       }
+
       return (
-        <Text style={styles.readonlyText}>
-          {value !== null && value !== undefined ? `${value} / ${max}` : 'Not set'}
-        </Text>
+        <View style={styles.ratingDisplayContainer}>
+          <Ionicons name="star" size={16} color={Colors.black} style={styles.ratingDisplayIcon} />
+          <Text style={styles.ratingDisplayText}>
+            {formattedRating} / {max}
+          </Text>
+        </View>
       );
     }
 
-    // For star rating (max 5 or 10, step 0.5)
-    if (max <= 10 && step === 0.5) {
-      return (
-        <StarRating
-          rating={value || 0}
-          size="large"
-          readonly={false}
-          onRatingChange={onChange}
-          color={Colors.black}
-        />
-      );
-    }
-
-    // For numeric rating (points/scale)
+    // For editing mode, use TextInput with decimal support
     return (
       <TextInput
-        value={value?.toString() || ''}
+        value={ratingInput}
         onChangeText={(text) => {
-          // Allow empty string, digits, minus sign, and one decimal point
-          if (text === '' || text === '-') {
+          // Allow empty string
+          if (text === '') {
+            setRatingInput('');
             onChange(null);
             return;
           }
 
-          // Validate format: optional minus, digits, optional decimal point and digits
-          const validFormat = /^-?\d*\.?\d*$/;
-          if (!validFormat.test(text)) {
-            return; // Don't update if invalid format
+          // Allow typing decimal point and one decimal digit
+          // Valid: "4", "4.", "4.5"
+          // Invalid: "4.55", "4.5.3"
+          const decimalParts = text.split('.');
+          if (decimalParts.length > 2) {
+            return; // More than one decimal point
+          }
+          if (decimalParts[1] !== undefined && decimalParts[1].length > 1) {
+            return; // More than 1 decimal digit
+          }
+
+          // Update the input string
+          setRatingInput(text);
+
+          // Allow intermediate states like "4." or final states like "4.5"
+          if (text.endsWith('.')) {
+            // Just typed decimal point, don't parse yet but keep the input
+            return;
           }
 
           const num = parseFloat(text);
-          onChange(isNaN(num) ? null : num);
+          if (!isNaN(num)) {
+            onChange(num);
+          }
         }}
         placeholder={`1-${max}`}
         keyboardType="decimal-pad"
@@ -429,6 +440,18 @@ const styles = StyleSheet.create({
   readonlyText: {
     fontSize: Typography.fontSize.medium,
     fontFamily: 'Nunito_400Regular',
+    color: Colors.text.primary,
+  },
+  ratingDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingDisplayIcon: {
+    marginRight: 6,
+  },
+  ratingDisplayText: {
+    fontSize: Typography.fontSize.medium,
+    fontFamily: 'Nunito_700Bold',
     color: Colors.text.primary,
   },
   dateButtonRow: {

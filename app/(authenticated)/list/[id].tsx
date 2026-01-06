@@ -602,15 +602,14 @@ export default function ListDetailScreen() {
 
           {/* Entry Cards Container */}
           {filteredEntries && filteredEntries.length > 0 && (
-            <View style={styles.entriesContainer}>
-              {filteredEntries.map((entry, index) => (
+            <View style={styles.entriesList}>
+              {filteredEntries.map((entry) => (
                 <EntryCard
                   key={entry.id}
                   entry={entry}
                   list={list}
                   onPress={() => handleEntryPress(entry.id)}
                   onLongPress={() => handleEntryLongPress(entry.id, entry.field_values['name'] || entry.field_values['1'] || 'Untitled')}
-                  showDivider={index < filteredEntries.length - 1}
                 />
               ))}
             </View>
@@ -1525,12 +1524,8 @@ const styles = StyleSheet.create({
   sortFilterIcon: {
     padding: Spacing.gap.xs,
   },
-  entriesContainer: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.large,
-    overflow: 'hidden',
+  entriesList: {
+    gap: Spacing.gap.medium,
   },
   emptyState: {
     alignItems: 'center',
