@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   headerSpacer: {
@@ -912,13 +912,13 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   stepSubtitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginBottom: Spacing.gap.large,
     lineHeight: 20,
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.medium,
   },
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   },
   ratingTypeText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
   },
   ratingTypeTextActive: {
@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
   },
   ratingTypeSubtext: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   fieldTypeRow: {
@@ -1015,7 +1015,7 @@ const styles = StyleSheet.create({
   },
   fieldTypeButtonText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
     textTransform: 'capitalize',
   },
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   optionChipText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   addOptionRow: {
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   checkboxSpacing: {
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
   },
   addFieldText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   privacyOptions: {
@@ -1111,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   privacyTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
     marginBottom: Spacing.gap.xs,
   },
@@ -1120,7 +1120,7 @@ const styles = StyleSheet.create({
   },
   privacyDescription: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.medium,
   },
@@ -1144,12 +1144,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   summaryValue: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   bottomActions: {
@@ -1183,7 +1183,7 @@ const styles = StyleSheet.create({
   },
   collapsibleHeaderText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   fieldCollapsibleHeader: {
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
   },
   fieldCollapsibleHeaderText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     flex: 1,
   },
@@ -1233,8 +1233,9 @@ const styles = StyleSheet.create({
   },
   fieldCollapsibleHeaderText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     flex: 1,
   },
 });
+

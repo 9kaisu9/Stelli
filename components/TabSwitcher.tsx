@@ -71,7 +71,8 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
 });
+

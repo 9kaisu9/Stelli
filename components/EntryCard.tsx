@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   entryName: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: 4,
   },
@@ -292,19 +292,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   ratingBorder: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.rating,
     borderRadius: BorderRadius.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   date: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   separator: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   inlineRating: {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   inlineRatingText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   tagsScrollContainer: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   imageContainer: {
@@ -362,3 +362,4 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
+

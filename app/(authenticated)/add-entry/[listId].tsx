@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
   },
   topBar: {
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: Typography.fontSize.h3,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   headerSpacer: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   requiredMark: {
@@ -467,3 +467,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.gap.section,
   },
 });
+

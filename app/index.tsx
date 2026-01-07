@@ -268,19 +268,19 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 32,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   title: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   formSection: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.primaryActive,
   },
   divider: {
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     paddingHorizontal: Spacing.gap.medium,
   },
@@ -320,12 +320,13 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   signUpLink: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.primaryActive,
   },
 });
+

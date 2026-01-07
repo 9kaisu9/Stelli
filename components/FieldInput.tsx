@@ -439,7 +439,7 @@ export default function FieldInput({ field, value, onChange, readonly = false, o
 const styles = StyleSheet.create({
   readonlyText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   ratingDisplayContainer: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   },
   ratingDisplayText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   dateButtonRow: {
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   dateButtonPlaceholder: {
@@ -516,12 +516,12 @@ const styles = StyleSheet.create({
   },
   datePickerCancelText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   datePickerConfirmText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   optionsContainer: {
@@ -546,12 +546,12 @@ const styles = StyleSheet.create({
   },
   optionButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   optionButtonTextActive: {
     color: Colors.black,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
   },
   yesNoContainer: {
     flexDirection: 'row',
@@ -575,12 +575,12 @@ const styles = StyleSheet.create({
   },
   yesNoButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   yesNoButtonTextActive: {
     color: Colors.black,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
   },
   imageScrollContainerReadonly: {
     flexDirection: 'row',
@@ -597,3 +597,4 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
 });
+

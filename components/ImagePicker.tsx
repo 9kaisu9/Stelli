@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   compactLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     marginBottom: Spacing.form.labelGap,
     marginLeft: 6,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   addImageText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.xs,
   },

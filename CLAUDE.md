@@ -111,7 +111,7 @@ import { Colors, Typography, Spacing, BorderRadius, Dimensions, CommonStyles } f
 
 ### Key Constants
 - **Colors**: `Colors.background` (#ebfeff), `Colors.primary` (#aae1e4), `Colors.primaryActive` (#73ced3)
-- **Fonts**: Nunito_400Regular, Nunito_700Bold
+- **Fonts**: Muli_400Regular, Muli_700Bold
 - **Spacing**: Screen padding (24h/64v), gaps (xs:4, small:8, medium:12, large:16, xl:60)
 - **Border Radius**: full (50px for buttons), large (25px for cards), circle (30px)
 
@@ -634,3 +634,4 @@ When implementing a new screen:
 | [lib/posthog.ts](lib/posthog.ts) | Analytics helpers |
 | [constants/styleGuide.ts](constants/styleGuide.ts) | Design system constants |
 | [constants/types.ts](constants/types.ts) | TypeScript type definitions |
+

@@ -176,14 +176,15 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     textAlign: 'center',
   },
   entryCount: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
 });
+

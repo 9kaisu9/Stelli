@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.primaryActive,
   },
   titleSection: {
@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   subtitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   formSection: {
@@ -263,13 +263,13 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
   termsLink: {
     color: Colors.primaryActive,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
   },
   signInSection: {
     flexDirection: 'row',
@@ -278,12 +278,13 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   signInLink: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.primaryActive,
   },
 });
+

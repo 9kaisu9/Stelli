@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   compactLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black, // Match TextInput label color
     marginBottom: Spacing.form.labelGap, // Same as TextInput label
     marginLeft: 6, // Slight offset to align with input field text
@@ -403,13 +403,13 @@ const styles = StyleSheet.create({
   },
   selectorLabel: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: 4,
   },
   selectorHint: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   modalOverlay: {
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   closeButton: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   iconGrid: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
   },
@@ -515,3 +515,4 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
 });
+

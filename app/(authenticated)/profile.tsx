@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   topSpacer: {
@@ -490,12 +490,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 32,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   name: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   nameRow: {
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   subscriptionBadge: {
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   },
   subscriptionText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   section: {
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   statsCard: {
@@ -584,12 +584,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   statLabel: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   statDivider: {
@@ -612,14 +612,14 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   infoValue: {
     flex: 1,
     textAlign: 'right',
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   actions: {
@@ -638,7 +638,8 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.error,
   },
 });
+

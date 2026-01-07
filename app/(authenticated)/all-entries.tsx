@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   entriesContainer: {
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   },
   entriesCount: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginBottom: Spacing.gap.medium,
   },
@@ -190,26 +190,26 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   emptySubtitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     lineHeight: 24,
   },
   loadingText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
   },
   errorText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginVertical: Spacing.gap.large,
   },
@@ -225,7 +225,8 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
 });
+

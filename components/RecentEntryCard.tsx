@@ -201,13 +201,13 @@ const styles = StyleSheet.create({
   },
   entryName: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
     marginBottom: 2,
   },
   date: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   iconStarsContainer: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   ratingIconText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   divider: {
@@ -237,3 +237,4 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
 });
+

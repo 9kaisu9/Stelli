@@ -13,9 +13,9 @@
 
 export const Colors = {
   // Brand Colors
-  background: '#ebfeff',           // Main app background (light cyan)
-  primary: '#aae1e4',              // Clickable buttons, accents
-  primaryActive: '#73ced3',        // Active state (tabs, pressed states)
+  background: '#F5F3ED',           // Main app background (light brown)
+  primary: '#EFE9DE',              // Clickable buttons, accents (slightly darker brown)
+  primaryActive: '#DCD0B9',        // Active state (tabs, pressed states - selected brown)
 
   // Neutral Colors
   white: '#ffffff',                // Cards, buttons
@@ -26,6 +26,7 @@ export const Colors = {
   // Semantic Colors
   border: '#000000',               // All borders
   error: '#dc2626',                // Error states, delete actions
+  rating: '#F7B15B',               // Rating background color (orange)
   text: {
     primary: '#000000',            // Main text color
     secondary: '#000000',          // Secondary text (currently same)
@@ -33,8 +34,8 @@ export const Colors = {
 
   // Interactive States
   button: {
-    neutral: '#aae1e4',            // Neutral pressable buttons (FAB, Next, etc.)
-    selected: '#73ced3',           // Selected/active list items
+    neutral: '#d9d9d9',            // Neutral pressable buttons (FAB, Next, etc.) - gray
+    selected: '#DCD0B9',           // Selected/active list items
   },
 };
 
@@ -45,9 +46,9 @@ export const Colors = {
 export const Typography = {
   // Font Families
   fontFamily: {
-    regular: 'Nunito_400Regular',  // Regular weight
-    bold: 'Nunito_700Bold',        // Bold weight
-    // Note: Nunito needs to be loaded via @expo-google-fonts/nunito
+    regular: 'Muli_400Regular',  // Regular weight
+    bold: 'Muli_700Bold',        // Bold weight
+    // Note: Muli needs to be loaded via @expo-google-fonts/muli
   },
 
   // Font Sizes
@@ -218,7 +219,7 @@ export const CommonStyles = StyleSheet.create({
 
   buttonText: {
     fontSize: Typography.fontSize.large,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.text.primary,
     textAlign: 'center',
   } as TextStyle,
@@ -236,7 +237,7 @@ export const CommonStyles = StyleSheet.create({
 
   smallButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.text.primary,
   } as TextStyle,
 
@@ -266,7 +267,7 @@ export const CommonStyles = StyleSheet.create({
   listItemText: {
     flex: 1,
     fontSize: Typography.fontSize.large,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.text.primary,
   } as TextStyle,
 
@@ -279,7 +280,7 @@ export const CommonStyles = StyleSheet.create({
   // Typography
   title: {
     fontSize: Typography.fontSize.h1,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     lineHeight: Typography.lineHeight.title,
     textAlign: 'center',
     color: Colors.text.primary,
@@ -287,13 +288,13 @@ export const CommonStyles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: Typography.fontSize.h2,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.text.primary,
   } as TextStyle,
 
   bodyText: {
     fontSize: Typography.fontSize.large,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     textAlign: 'center',
     color: Colors.text.primary,
     lineHeight: Typography.lineHeight.body,
@@ -301,7 +302,7 @@ export const CommonStyles = StyleSheet.create({
 
   smallText: {
     fontSize: Typography.fontSize.small,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.text.primary,
   } as TextStyle,
 
@@ -323,7 +324,7 @@ export const CommonStyles = StyleSheet.create({
 
   tabText: {
     fontSize: Typography.fontSize.medium,
-    fontWeight: Typography.fontWeight.regular,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.text.primary,
   } as TextStyle,
 
@@ -357,7 +358,7 @@ export const CommonStyles = StyleSheet.create({
 
   actionSheetTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     textAlign: 'center',
   } as TextStyle,
@@ -401,7 +402,7 @@ export const CommonStyles = StyleSheet.create({
 
   actionSheetOptionText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   } as TextStyle,
 
@@ -492,7 +493,7 @@ export const LayoutPatterns = {
  * - Active: Colors.primaryActive background (#73ced3)
  * - Animated color transition using React Native Reanimated
  * - Gap between tabs: 4px
- * - Font size: 14px (Nunito Bold)
+ * - Font size: 14px (Muli Bold)
  */
 
 /**
@@ -525,7 +526,7 @@ export const LayoutPatterns = {
  *   - Border radius: 25px (BorderRadius.large)
  *   - 1px black border
  * - Header (optional):
- *   - Title: 20px Nunito Bold, center-aligned
+ *   - Title: 20px Muli Bold, center-aligned
  *   - Close button: 40x40px circle, Colors.primary background, top-right
  *   - Padding: 16px vertical, 14px horizontal
  *   - Divider below header: 1px black line
@@ -537,8 +538,9 @@ export const LayoutPatterns = {
  *   - Fully rounded (BorderRadius.full)
  *   - Background: Colors.primary (#aae1e4)
  *   - 1px black border
- *   - Icon + text layout: Icon (24px) + gap (12px) + text (20px Nunito Regular)
+ *   - Icon + text layout: Icon (24px) + gap (12px) + text (20px Muli Regular)
  *   - Destructive options: Red text/icon (Colors.error #dc2626)
  * - Animation: Fade in/out (animationType="fade")
  * - Dismissible: Tap outside overlay or close button
  */
+

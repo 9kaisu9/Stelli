@@ -23,7 +23,7 @@ borderColor: Colors.border,
 ### 2. **Typography**
 Font sizes, weights, line heights, and font families.
 
-**Font Family:** Nunito (loaded via @expo-google-fonts/nunito)
+**Font Family:** Muli (loaded via @expo-google-fonts/muli)
 
 ```typescript
 import { Typography } from '@/constants/styleGuide';
@@ -31,8 +31,8 @@ import { Typography } from '@/constants/styleGuide';
 // Usage
 fontSize: Typography.fontSize.h1,
 fontWeight: Typography.fontWeight.bold,
-fontFamily: Typography.fontFamily.regular,  // Nunito_400Regular
-fontFamily: Typography.fontFamily.bold,     // Nunito_700Bold
+fontFamily: Typography.fontFamily.regular,  // Muli_400Regular
+fontFamily: Typography.fontFamily.bold,     // Muli_700Bold
 lineHeight: Typography.lineHeight.title,
 ```
 
@@ -282,3 +282,4 @@ When adding new design tokens or common styles:
 - `constants/types.ts` - TypeScript type definitions
 - `app/index.tsx` - Example implementation (Welcome Screen)
 - `app/home.tsx` - Example implementation (Main List Screen)
+

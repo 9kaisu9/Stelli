@@ -414,7 +414,7 @@ export default function EntryDetailScreen() {
           <View style={styles.informationSection}>
             {/* Gradient Section - Top part */}
             <LinearGradient
-              colors={['rgba(235, 254, 255, 0)', 'rgba(235, 254, 255, 0.7)', 'rgba(235, 254, 255, 0.95)', Colors.background]}
+              colors={['rgba(245, 243, 237, 0)', 'rgba(245, 243, 237, 0.7)', 'rgba(245, 243, 237, 0.95)', Colors.background]}
               locations={[0, 0.3, 0.55, 1]}
               style={styles.gradientSection}
               pointerEvents="none"
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
   },
   topBar: {
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   scrollableTitleText: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   contentSection: {
@@ -1222,13 +1222,13 @@ const styles = StyleSheet.create({
   },
   nameLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   entryName: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   ratingSection: {
@@ -1239,19 +1239,24 @@ const styles = StyleSheet.create({
   },
   ratingLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   ratingDisplayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.rating,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
   },
   ratingDisplayIcon: {
     marginRight: 6,
   },
   ratingDisplayValue: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   fieldsContainer: {
@@ -1279,12 +1284,12 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   fieldValue: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   requiredMark: {
@@ -1302,7 +1307,7 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   editActions: {
@@ -1325,7 +1330,8 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.error,
   },
 });
+

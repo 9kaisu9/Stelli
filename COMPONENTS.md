@@ -193,7 +193,7 @@ const [activeTab, setActiveTab] = useState('Mine');
 - 28px height, fully rounded
 - 1px black border on each tab
 - 4px gap between tabs
-- 14px font size (Nunito Bold)
+- 14px font size (Muli Bold)
 - Haptic feedback on tab change
 
 **Animation:**
@@ -704,3 +704,4 @@ Import and use consistently:
 ```typescript
 import { RecentEntry, ListItem } from '@/constants/types';
 ```
+

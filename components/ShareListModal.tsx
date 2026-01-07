@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     textAlign: 'center',
   },
@@ -317,13 +317,13 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     textAlign: 'center',
   },
   description: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     lineHeight: 20,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   permissionDescription: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   tokenLabel: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   tokenContainer: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   tokenText: {
     flex: 1,
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   infoBox: {
@@ -403,8 +403,9 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     lineHeight: 18,
   },
 });
+

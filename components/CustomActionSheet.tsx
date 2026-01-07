@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     textAlign: 'center',
   },
@@ -171,10 +171,11 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   optionTextDanger: {
     color: Colors.error,
   },
 });
+

@@ -69,6 +69,7 @@ export default function Button({
 
   const textStyle: TextStyle[] = [
     CommonStyles.buttonText,
+    variant === 'primary' && styles.primaryButtonText,
     size === 'small' && styles.smallButtonText,
     disabled && styles.disabledText,
   ];
@@ -89,7 +90,10 @@ export default function Button({
 
 const styles = StyleSheet.create({
   primaryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.black,
+  },
+  primaryButtonText: {
+    color: Colors.white,
   },
   smallButton: {
     height: Dimensions.button.small,

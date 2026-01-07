@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useFonts, Nunito_400Regular, Nunito_700Bold } from '@expo-google-fonts/nunito';
+import { useFonts, Muli_400Regular, Muli_700Bold } from '@expo-google-fonts/muli';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -13,8 +13,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Nunito_400Regular,
-    Nunito_700Bold,
+    Muli_400Regular,
+    Muli_700Bold,
   });
 
   useEffect(() => {
@@ -42,3 +42,4 @@ export default function RootLayout() {
     </PostHogProvider>
   );
 }
+

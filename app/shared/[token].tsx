@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   errorContainer: {
@@ -342,12 +342,12 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   errorText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   },
   shareIndicatorText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   permissionBadge: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   listInfo: {
@@ -414,19 +414,19 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   listDescription: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     lineHeight: 24,
   },
   ownerText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginBottom: Spacing.gap.xs,
   },
@@ -446,12 +446,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   detailValue: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     textTransform: 'capitalize',
   },
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   },
   moreEntriesHint: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     marginTop: Spacing.gap.small,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.medium,
   },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   },
   fieldName: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     flex: 1,
   },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   },
   fieldType: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textTransform: 'capitalize',
   },
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   },
   requiredText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.white,
   },
   fieldDivider: {
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     lineHeight: 18,
   },
@@ -554,8 +554,9 @@ const styles = StyleSheet.create({
   },
   signInPrompt: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
 });
+

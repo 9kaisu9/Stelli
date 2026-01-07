@@ -525,16 +525,16 @@ export default function ListDetailScreen() {
       {/* Floating Action Buttons */}
       <View style={styles.floatingButtons}>
         <TouchableOpacity onPress={handleBack} style={styles.floatingButton}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+          <Ionicons name="arrow-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <View style={styles.headerRightButtons}>
           <TouchableOpacity onPress={handleOpenSortFilterModal} style={styles.floatingButton}>
-            <Ionicons name="funnel-outline" size={24} color={Colors.text.primary} />
+            <Ionicons name="funnel-outline" size={24} color={Colors.black} />
           </TouchableOpacity>
           {/* Only show action menu for list owners */}
           {isOwner && (
             <TouchableOpacity onPress={handleMoreOptions} style={styles.floatingButton}>
-              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
+              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.black} />
             </TouchableOpacity>
           )}
         </View>
@@ -1314,7 +1314,7 @@ export default function ListDetailScreen() {
             onPress={handleAddEntry}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={32} color={Colors.black} />
+            <Ionicons name="add" size={32} color={Colors.white} />
           </TouchableOpacity>
         </View>
       )}
@@ -1410,12 +1410,12 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: Typography.fontSize.h1,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   listDescription: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     lineHeight: 24,
     marginBottom: Spacing.gap.large,
@@ -1428,7 +1428,7 @@ const styles = StyleSheet.create({
   },
   entryCountText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   permissionBadge: {
@@ -1450,7 +1450,7 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
   },
   viewText: {
     color: Colors.gray,
@@ -1466,7 +1466,7 @@ const styles = StyleSheet.create({
   },
   optionSectionTitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
@@ -1491,12 +1491,12 @@ const styles = StyleSheet.create({
   },
   optionButtonText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   optionButtonTextActive: {
     color: Colors.black,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
   },
   entriesSection: {
     marginBottom: Spacing.gap.section,
@@ -1514,7 +1514,7 @@ const styles = StyleSheet.create({
   },
   entryCount: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
     backgroundColor: Colors.background,
     paddingHorizontal: Spacing.gap.small,
@@ -1536,13 +1536,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   emptySubtitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     lineHeight: 24,
@@ -1555,13 +1555,13 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
   },
   errorText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginVertical: Spacing.gap.large,
   },
@@ -1575,7 +1575,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   fabContainer: {
@@ -1589,7 +1589,7 @@ const styles = StyleSheet.create({
     width: Dimensions.icon.add,
     height: Dimensions.icon.add,
     borderRadius: BorderRadius.circle,
-    backgroundColor: Colors.button.neutral,
+    backgroundColor: Colors.black,
     borderWidth: 1,
     borderColor: Colors.border,
     justifyContent: 'center',
@@ -1618,7 +1618,7 @@ const styles = StyleSheet.create({
   },
   modalHeaderTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   modalHeaderSpacer: {
@@ -1662,7 +1662,7 @@ const styles = StyleSheet.create({
   modalOptionText: {
     flex: 1,
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
   },
   modalOptionTextActive: {
@@ -1692,13 +1692,13 @@ const styles = StyleSheet.create({
   },
   sortSectionTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.xs,
   },
   sortSectionSubtitle: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginBottom: Spacing.gap.medium,
   },
@@ -1725,7 +1725,7 @@ const styles = StyleSheet.create({
   sortCriteriaText: {
     flex: 1,
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   sortCriteriaTextInactive: {
@@ -1752,7 +1752,7 @@ const styles = StyleSheet.create({
   },
   emptySectionText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
   },
@@ -1791,7 +1791,7 @@ const styles = StyleSheet.create({
   },
   actionMenuTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     textAlign: 'center',
   },
@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
   },
   actionMenuButtonText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   actionMenuButtonTextDanger: {
@@ -1843,7 +1843,7 @@ const styles = StyleSheet.create({
   },
   filterDescription: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: 2,
   },
@@ -1858,19 +1858,19 @@ const styles = StyleSheet.create({
   },
   filterConfigTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   filterConfigSubtitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginBottom: Spacing.gap.large,
   },
   filterConfigHelper: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
     fontStyle: 'italic',
@@ -1886,7 +1886,7 @@ const styles = StyleSheet.create({
   },
   ratingInputLabel: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.xs,
   },
@@ -1898,12 +1898,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.large,
     paddingHorizontal: Spacing.padding.card,
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   ratingRangeSeparator: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: 20,
   },
@@ -1928,11 +1928,11 @@ const styles = StyleSheet.create({
   },
   datePresetButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   datePresetButtonTextActive: {
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   // Inline Filter Configuration Styles
@@ -1968,7 +1968,7 @@ const styles = StyleSheet.create({
   },
   inlineConfigLabel: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   modeButtonsRow: {
@@ -1993,11 +1993,11 @@ const styles = StyleSheet.create({
   },
   modeButtonText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   modeButtonTextActive: {
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   ratingInputsRow: {
@@ -2008,7 +2008,7 @@ const styles = StyleSheet.create({
   },
   inlineInputLabel: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.xs,
   },
@@ -2023,12 +2023,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.form.inputPadding,
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   inlineInputText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
     textAlign: 'left',
   },
@@ -2056,7 +2056,7 @@ const styles = StyleSheet.create({
   },
   datePickerButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
     textAlign: 'center',
   },
@@ -2087,12 +2087,13 @@ const styles = StyleSheet.create({
   },
   datePickerCancelText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
   },
   datePickerConfirmText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
 });
+

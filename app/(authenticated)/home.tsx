@@ -398,7 +398,7 @@ export default function HomeScreen() {
           }}
           activeOpacity={0.7}
         >
-          <Ionicons name="add" size={32} color={Colors.black} />
+          <Ionicons name="add" size={32} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
   },
   headerArrow: {
@@ -683,15 +683,15 @@ const styles = StyleSheet.create({
   newListButton: {
     paddingHorizontal: Spacing.gap.medium,
     paddingVertical: Spacing.gap.xs,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.black,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   newListButtonText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
-    color: Colors.black,
+    fontFamily: 'Muli_700Bold',
+    color: Colors.white,
   },
   importContainer: {
     flexDirection: 'row',
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: BorderRadius.large,
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.text.primary,
   },
   importButton: {
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   },
   importButtonText: {
     fontSize: Typography.fontSize.small,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
   tabSwitcherContainer: {
@@ -745,13 +745,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: Typography.fontSize.h2,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginBottom: Spacing.gap.small,
   },
   emptySubtitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     marginBottom: Spacing.gap.xl,
@@ -759,13 +759,13 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
   },
   errorText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginVertical: Spacing.gap.large,
   },
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     width: Dimensions.icon.add,
     height: Dimensions.icon.add,
     borderRadius: BorderRadius.circle,
-    backgroundColor: Colors.button.neutral,
+    backgroundColor: Colors.black,
     borderWidth: 1,
     borderColor: Colors.border,
     justifyContent: 'center',
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
   },
   actionMenuTitle: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     textAlign: 'center',
   },
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.button.neutral,
     borderWidth: 1,
     borderColor: Colors.border,
     justifyContent: 'center',
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
   },
   actionMenuButtonText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   actionMenuButtonTextDanger: {
@@ -869,7 +869,7 @@ const styles = StyleSheet.create({
   },
   listPickerSectionTitle: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.gray,
     marginTop: Spacing.gap.medium,
     marginBottom: Spacing.gap.small,
@@ -885,14 +885,14 @@ const styles = StyleSheet.create({
   },
   noListsText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.text.primary,
     marginTop: Spacing.gap.medium,
     marginBottom: Spacing.gap.small,
   },
   noListsSubtext: {
     fontSize: Typography.fontSize.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     textAlign: 'center',
     marginBottom: Spacing.gap.large,
@@ -907,7 +907,8 @@ const styles = StyleSheet.create({
   },
   createListButtonText: {
     fontSize: Typography.fontSize.large,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
   },
 });
+

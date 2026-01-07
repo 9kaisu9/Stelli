@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.medium,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Muli_700Bold',
     color: Colors.black,
     marginBottom: Spacing.form.labelGap,
   },
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.form.inputPadding,
     ...Typography.medium,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.black,
   },
   inputMultiline: {
@@ -67,16 +67,17 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: '#ef4444',
     marginTop: Spacing.small,
     marginLeft: Spacing.form.inputPadding,
   },
   helperText: {
     ...Typography.small,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Muli_400Regular',
     color: Colors.gray,
     marginTop: Spacing.small,
     marginLeft: Spacing.form.inputPadding,
   },
 });
+
